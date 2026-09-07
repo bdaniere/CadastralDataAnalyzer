@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 
 import geopandas as gpd
 import requests
+from sqlalchemy import create_engine
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +40,23 @@ def download_cadastre_data(code_territoire: str, couche: str) -> None:
         else:
             logger.error(f"Error during download. Status code : {response.status_code}")
 
-        logger.debug("Lecture du fichier géographique en cours (GeoPandas)...")
+        logger.debug("Reading the geographic file (GeoPandas)...")
         gdf = gpd.read_file(destination_file)
 
+        logger.debug("Inserting data into the PostgreSQL database...")
+        engine = create_engine("postgresql+psycopg2://postgres:postgres@localhost:5433/cadastral_data")
+        gdf.to_postgis(couche, schema="raw_data", con=engine, if_exists="replace", index=False)
+
+
+# ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗ 
+# ██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝ 
+# ██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗
+# ██║  ██║██╔══╝  ██╔══██╗██║   ██║██║   ██║
+# ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝
+# ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝                                         
+
 if __name__ == "__main__":
-    download_cadastre_data("38080", "parcelles")
+    for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
+        download_cadastre_data("38080", couche)
     
 

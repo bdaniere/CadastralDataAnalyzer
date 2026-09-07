@@ -8,6 +8,9 @@ authors = ["bdaniere <benjamin.daniere@gmail.com>"]
 python = "~3.14.0"
 geopandas = "^1.1.4"
 requests = "^2.34.2"
+psycopg2-binary = "^2.9.12"
+geoalchemy2 = "^0.20.0"
+sqlalchemy = "^2.0.52"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
