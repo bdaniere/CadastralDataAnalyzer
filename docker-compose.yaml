@@ -1,0 +1,22 @@
+services: 
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: my_postgis
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cadastral_data
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cadastral_data_analyser_network
+
+networks:
+  cadastral_data_analyser_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
