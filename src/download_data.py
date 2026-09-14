@@ -5,9 +5,11 @@ from tempfile import TemporaryDirectory
 import geopandas as gpd
 import pandas as pd
 import requests
-from sqlalchemy import create_engine
+
+from utils import get_engine
 
 logger = logging.getLogger(__name__)
+engine = get_engine()
 
 # ██╗   ██╗████████╗██╗██╗     ███████╗
 # ██║   ██║╚══██╔══╝██║██║     ██╔════╝
@@ -80,7 +82,8 @@ def download_ban_data(code_territoire:str):
                     
             if chunks_filtres:
                 df_final = pd.concat(chunks_filtres, ignore_index=True)
-                engine = create_engine("postgresql+psycopg2://postgres:postgres@localhost:5433/cadastral_data")
+                if "id" not in df_final.columns:
+                    df_final["id"] = range(len(df_final))
                 df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
 
             else:
@@ -122,9 +125,12 @@ def download_cadastre_data(code_territoire: str, couche: str) -> None:
         download_file(url, output_file_path)
         gdf = gpd.read_file(output_file_path)
 
+        if "id" not in gdf.columns:
+            gdf["id"] = range(len(gdf))
+
         logger.debug("Inserting data into the PostgreSQL database...")
-        engine = create_engine("postgresql+psycopg2://postgres:postgres@localhost:5433/cadastral_data")
         gdf.to_postgis(couche, schema="raw_data", con=engine, if_exists="replace", index=False)
+        
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗ 
@@ -138,6 +144,3 @@ if __name__ == "__main__":
     for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
         download_cadastre_data("38080", couche)
     download_ban_data("38080")
-
-    
-
