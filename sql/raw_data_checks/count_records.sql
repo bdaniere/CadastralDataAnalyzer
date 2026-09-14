@@ -1,0 +1,1 @@
+SELECT COUNT(*) AS record_count FROM {schema_name}.{table_name};
