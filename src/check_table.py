@@ -50,16 +50,13 @@ class TableSQLChecker:
 
     def format_result(self) -> dict:
         """
-        TO DO : revoir le fonctionnement : pour le moment c'est OK // mais pas stable
+        Format the result of the SQL check into a dictionary.
+
+        :return: Dictionary containing the check name, status, value, and message.
         """
 
         result_fetchall = self.result.fetchall()
-        if isinstance(result_fetchall, list) and not result_fetchall:
-            value = 0
-        else:
-            value = result_fetchall[0][0]
-
-        return {"check" : Path(self.sql_file).stem, "status" : None, "value" : value}
+        return {"check" : Path(self.sql_file).stem, "status" : result_fetchall[0][0], "value" : result_fetchall[0][1], "message" : result_fetchall[0][2]}
 
 
 def run_all_checks_on_tables(engine) -> list:
