@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import requests
 
 
@@ -14,12 +15,17 @@ class GeoServerClient:
         self.auth = (username, password)
 
     def _check_response(self, response):
+        """
+        Check the response from the GeoServer API to ensure it was successful.
+        
+        :param response: The response object from the GeoServer API.
+        :raises RuntimeError: If the response status code is not OK.
+        """
         if not response.ok:
             raise RuntimeError(
                 f"GeoServer error {response.status_code}\n"
                 f"{response.text}"
             )
-
 
     def element_exists(
         self,
@@ -28,9 +34,13 @@ class GeoServerClient:
         element_name: str | None = None,
     ) -> bool:
         """
-        Checking whether an element (workspace / datastore / styles / layer) exists on a Geoserver
+        Check whether an element (workspace / datastore / styles / layer) exists on a GeoServer.
+        
+        :param workspace_name: The name of the workspace to check.
+        :param element_type: The type of element to check (workspace, datastore, style, layer).
+        :param element_name: The name of the element to check, if applicable.
+        :return: True if the element exists, False otherwise.
         """
-
         paths = {
             "workspace": "",
             "datastore": f"/datastores/{element_name}",
@@ -42,8 +52,7 @@ class GeoServerClient:
             suffix = paths[element_type]
         except KeyError:
             raise NotImplementedError(
-                f"element_exists error: "
-                f"{element_type} not implemented yet"
+                f"element_exists error: {element_type} not implemented yet"
             )
 
         response = requests.get(
@@ -56,8 +65,12 @@ class GeoServerClient:
 
         return response.status_code == 200
 
-
     def create_workspace(self, workspace_name: str):
+        """
+        Create a new workspace on the GeoServer.
+        
+        :param workspace_name: The name of the workspace to create.
+        """
         if self.element_exists(workspace_name, "workspace"):
             return
 
@@ -75,9 +88,6 @@ class GeoServerClient:
         if response.status_code not in (201, 401, 403):
             self._check_response(response)
 
-        return response
-
-
     def create_postgis_store(
         self,
         workspace: str,
@@ -89,7 +99,18 @@ class GeoServerClient:
         password: str,
         schema: str = "raw_data",
     ):
-
+        """
+        Create a new PostGIS store on the GeoServer.
+        
+        :param workspace: The name of the workspace to create the store in.
+        :param store_name: The name of the store to create.
+        :param db_name: The name of the database to connect to.
+        :param host: The hostname of the database server.
+        :param port: The port number of the database server.
+        :param user: The username to use to connect to the database.
+        :param password: The password to use to connect to the database.
+        :param schema: The schema name to use in the database.
+        """
         if self.element_exists(workspace, "datastore", store_name):
             return
 
@@ -117,17 +138,20 @@ class GeoServerClient:
 
         self._check_response(response)
 
-        return response
-
-
     def create_style(
         self,
         workspace: str,
         style_name: str,
         sld_file: str,
     ):
-
-        if self.element_exists(workspace, "style", style_name) :
+        """
+        Create a new style on the GeoServer.
+        
+        :param workspace: The name of the workspace to create the style in.
+        :param style_name: The name of the style to create.
+        :param sld_file: The path to the SLD file to use for the style.
+        """
+        if self.element_exists(workspace, "style", style_name):
             return 
         
         response = requests.post(
@@ -144,8 +168,6 @@ class GeoServerClient:
         )
         self._check_response(response)
 
-        return response
-
     def publish_table(
         self,
         workspace: str,
@@ -153,6 +175,14 @@ class GeoServerClient:
         table_name: str,
         style_name: str | None = None,
     ):
+        """
+        Publish a table as a layer on the GeoServer.
+        
+        :param workspace: The name of the workspace to publish the layer in.
+        :param store_name: The name of the store to publish the layer from.
+        :param table_name: The name of the table to publish as a layer.
+        :param style_name: The name of the style to use for the layer.
+        """
         xml = f"""
         <featureType>
             <name>{table_name}</name>
@@ -191,13 +221,17 @@ class GeoServerClient:
 
             response = self._check_response(layer_response)
 
-        return response
-
     def delete_workspace(
         self,
         workspace_name: str,
         recurse: bool = True,
     ):
+        """
+        Delete a workspace on the GeoServer.
+        
+        :param workspace_name: The name of the workspace to delete.
+        :param recurse: Whether to delete the workspace and all its contents recursively.
+        """
         response = requests.delete(
             f"{self.url}/rest/workspaces/{workspace_name}",
             auth=self.auth,
