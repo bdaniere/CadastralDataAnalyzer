@@ -65,29 +65,32 @@ def formate_code_territoire(code_territoire: str) -> tuple[str, str | None]:
 def download_ban_data(code_territoire:str):
     """Download the National Address Database for a municipality or department. Import the data into a database."""
 
-    dep_code, code_postal = formate_code_territoire(code_territoire)
+    dep_code, code_commune = formate_code_territoire(code_territoire) 
     url = f"https://adresse.data.gouv.fr/data/ban/adresses/latest/csv/adresses-{dep_code}.csv.gz"
 
     with TemporaryDirectory() as tmpdirname:
         output_file_path = Path(tmpdirname) / f"adresses_{dep_code}.csv.gz"
         download_file(url, output_file_path)
 
-        if output_file_path.exists():            
-            chunks_filtres = []
-            for chunk in pd.read_csv(output_file_path, sep=';', compression='gzip', 
-                                    chunksize=50000, dtype=str):
-                chunk_filtre = chunk[chunk['code_postal'] == code_postal]
-                if not chunk_filtre.empty:
-                    chunks_filtres.append(chunk_filtre)
-                    
-            if chunks_filtres:
-                df_final = pd.concat(chunks_filtres, ignore_index=True)
-                if "id" not in df_final.columns:
-                    df_final["id"] = range(len(df_final))
-                df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
+        if output_file_path.exists():
+            if code_commune:            
+                chunks_filtres = []
+                for chunk in pd.read_csv(output_file_path, sep=';', compression='gzip', chunksize=50000, dtype=str): 
+                    chunk_filtre = chunk[chunk['code_postal'] == code_commune]
+                    if not chunk_filtre.empty:
+                        chunks_filtres.append(chunk_filtre)
+                        
+                if chunks_filtres:
+                    df_final = pd.concat(chunks_filtres, ignore_index=True)
+                    if "id" not in df_final.columns:
+                        df_final["id"] = range(len(df_final))
+                    df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
 
-            else:
-                logger.warning(f"No addresses were found for INSEE code {code_postal} in this department.")
+                else:
+                    logger.warning(f"No addresses were found for INSEE code {code_commune} in this department.")
+            else : 
+                df_final = pd.read_csv(output_file_path, sep=';', compression='gzip', dtype=str)
+                df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
 
 
 #  ██████╗ █████╗ ██████╗  █████╗ ███████╗████████╗██████╗  █████╗ ██╗         ██████╗  █████╗ ████████╗ █████╗ 
@@ -140,7 +143,8 @@ def download_cadastre_data(code_territoire: str, couche: str) -> None:
 # ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝
 # ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝                                         
 
+
 if __name__ == "__main__":
     for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
-        download_cadastre_data("38080", couche)
-    download_ban_data("38080")
+        download_cadastre_data("38", couche)
+    download_ban_data("38")
