@@ -27,6 +27,17 @@ class GeoServerClient:
                 f"{response.text}"
             )
 
+    def _read_sld_file(self, sld_file: Path) -> str:
+        """
+        Read an SLD file and return its content.
+        
+        :param sld_file: The path to the SLD file to read.
+        :return: The content of the SLD file.
+        """
+        
+        with sld_file.open('r', encoding='utf-8') as f:
+            return f.read()
+
     def element_exists(
         self,
         workspace_name: str,
@@ -142,7 +153,7 @@ class GeoServerClient:
         self,
         workspace: str,
         style_name: str,
-        sld_file: str,
+        sld_file: Path,
     ):
         """
         Create a new style on the GeoServer.
@@ -154,6 +165,8 @@ class GeoServerClient:
         if self.element_exists(workspace, "style", style_name):
             return 
         
+        sld_content = self._read_sld_file(sld_file)
+        
         response = requests.post(
             f"{self.url}/rest/workspaces/{workspace}/styles"
             f"?name={style_name}",
@@ -162,9 +175,7 @@ class GeoServerClient:
                 "Content-Type":
                 "application/vnd.ogc.sld+xml"
             },
-            data=Path(sld_file).read_text(
-            encoding="utf-8"
-        ),
+            data=sld_content,
         )
         self._check_response(response)
 
@@ -219,7 +230,7 @@ class GeoServerClient:
                 data=layer_xml,
             )
 
-            response = self._check_response(layer_response)
+            self._check_response(layer_response)
 
     def delete_workspace(
         self,
@@ -270,7 +281,7 @@ if __name__ == "__main__":
     toto.create_workspace('raw_data_workspace')
     toto.create_postgis_store(workspace="raw_data_workspace", store_name="raw_data_store", db_name="cadastral_data", host="postgis", port=5432, user="postgres", password="postgres", schema="raw_data")
     for style_path in glob("styles/*.sld"):
-        toto.create_style(workspace="raw_data_workspace", style_name=Path(style_path).stem, sld_file=style_path)
+        toto.create_style(workspace="raw_data_workspace", style_name=Path(style_path).stem, sld_file=Path(style_path))
     for table_name, style_name in tables_styles.items():
         toto.publish_table(workspace="raw_data_workspace", store_name="raw_data_store", table_name=table_name, style_name=style_name)
 
