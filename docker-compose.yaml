@@ -13,10 +13,25 @@ services:
     networks:
       - cadastral_data_analyser_network
 
+  geoserver:
+    image: docker.osgeo.org/geoserver:2.28.x
+    container_name: my_geoserver
+    environment :
+      GEOSERVER_ADMIN_USER : admin
+      GEOSERVER_ADMIN_PASSWORD : admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver_data
+    depends_on : 
+      - postgis
+    networks:
+      - cadastral_data_analyser_network
+
 networks:
   cadastral_data_analyser_network:
     driver: bridge
 
 volumes:
   postgres_data:
-    driver: local
+  geoserver_data:
