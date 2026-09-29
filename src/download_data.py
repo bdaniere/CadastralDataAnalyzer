@@ -133,7 +133,7 @@ def get_cadastre_url(code_territoire: str, couche: str) -> str:
     Constructs the URL for downloading cadastral data from cadastre.data.gouv.fr.
     """
     
-    assert couche in {'communes', 'sections', 'feuilles', 'parcelles', 'batiments'}, "Invalid layer name. Must be one of 'communes', 'sections', 'feuilles', 'parcelles', or 'batiments'."
+    assert couche in {'communes', 'parcelles', 'batiments'}, "Invalid layer name. Must be one of 'communes', 'parcelles', or 'batiments'."
 
     if len(code_territoire) == 2:
         return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/departements/{code_territoire}/shp/{couche}"
@@ -151,6 +151,6 @@ def get_cadastre_url(code_territoire: str, couche: str) -> str:
 # ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝                                         
 
 if __name__ == "__main__":
-    # for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
+    # for couche in ['communes', 'parcelles', 'batiments']:
     #     get_cadastre_url("38080", couche)
     download_and_format_ban_data("38")
