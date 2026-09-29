@@ -61,44 +61,42 @@ def formate_code_territoire(code_territoire: str) -> tuple[str, str | None]:
     else:
         raise ValueError("Le code du territoire doit être soit un code départemental (2 chiffres) soit un code communal (5 chiffres).")
 
-
 def download_and_format_ban_data(code_territoire: str) -> None:
     """
     Downloads the National Address Database for a municipality or department and formats it.
     """
 
-    dep_code, code_postal = formate_code_territoire(code_territoire)
+    dep_code, code_insee = formate_code_territoire(code_territoire)
     url = f"https://adresse.data.gouv.fr/data/ban/adresses/latest/csv/adresses-{dep_code}.csv.gz"
 
     with TemporaryDirectory() as tmpdirname:
         output_file_path = Path(tmpdirname) / f"adresses_{dep_code}.csv.gz"
         download_file(url, output_file_path)
-
         
         if output_file_path.exists():
-            if code_postal:
+            if code_insee:
                 chunks_filtres = []
                 for chunk in pd.read_csv(output_file_path, sep=';', compression='gzip', chunksize=50000, dtype=str):
-                    chunk_filtre = chunk[chunk['code_postal'] == code_postal]
+                    chunk_filtre = chunk[chunk['code_insee'] == code_insee]
                     if not chunk_filtre.empty:
                         chunks_filtres.append(chunk_filtre)
 
                 if chunks_filtres:
-                    df_final = pd.concat(chunks_filtres, ignore_index=True)
-                    if "id" not in df_final.columns:
-                        df_final["id"] = range(len(df_final))
-
-                    # Ajouter la construction de la géométrie
-                    gdf = gpd.GeoDataFrame(df_final, geometry=gpd.points_from_xy(df_final['x'], df_final['y']), crs="EPSG:2154")
-                    gdf.to_postgis("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
-            
+                    df_address = pd.concat(chunks_filtres, ignore_index=True)
+                else : 
+                    raise ValueError("No matching address found for the given code postal.")
             else : 
-                df = pd.read_csv(output_file_path, sep=';', compression='gzip', dtype=str)
-                gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['x'], df['y']), crs="EPSG:2154")
-                gdf.to_postgis("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)   
+                df_address = pd.read_csv(output_file_path, sep=';', compression='gzip', dtype=str)
+
+            # Split multiple cad_parcelle values
+            df_address["cad_parcelles"] = df_address["cad_parcelles"].str.split("|")
+            df_final = df_address.explode("cad_parcelles", ignore_index=True)
+
+            gdf = gpd.GeoDataFrame(df_final, geometry=gpd.points_from_xy(df_final['x'], df_final['y']), crs="EPSG:2154")
+            gdf.to_postgis("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)   
 
         else:
-            logger.warning(f"No addresses were found for INSEE code {code_postal} in this department.")
+            raise ValueError(f"No addresses were found for INSEE code {code_insee} in this department.")
 
 
 def download_and_format_cadastre_data(code_territoire: str, couche: str) -> None:
