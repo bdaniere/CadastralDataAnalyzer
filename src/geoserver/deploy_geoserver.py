@@ -273,7 +273,8 @@ from pathlib import Path
 tables_styles={
     "batiments" : "batiments",
     "communes" : "Communes_simples",
-    "parcelles" : "Zones_simple"
+    "parcelles" : "Zones_simple",
+    "base_adresse_nationale": "black_square",
     }
 
 if __name__ == "__main__":

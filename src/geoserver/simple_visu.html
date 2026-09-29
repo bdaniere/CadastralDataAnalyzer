@@ -77,15 +77,30 @@ const parcelles = new ol.layer.Tile({
 });
 
 //
+// Couche WMS Bâtiments
+//
+const adresses = new ol.layer.Tile({
+    source: new ol.source.TileWMS({
+        url: 'http://localhost:8080/geoserver/raw_data_workspace/wms',
+        params: {
+            LAYERS: 'raw_data_workspace:base_adresse_nationale',
+            TILED: true
+        },
+        serverType: 'geoserver'
+    })
+});
+
+//
 // Carte
 //
 const map = new ol.Map({
     target: 'map',
     layers: [
         osm,
-        batiments,
         communes,
-        parcelles
+        parcelles,
+        batiments,
+        adresses
     ],
     view: new ol.View({
         center: ol.proj.fromLonLat([2.35, 48.85]),

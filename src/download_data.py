@@ -74,21 +74,31 @@ def download_and_format_ban_data(code_territoire: str) -> None:
         output_file_path = Path(tmpdirname) / f"adresses_{dep_code}.csv.gz"
         download_file(url, output_file_path)
 
-        if output_file_path.exists():            
-            chunks_filtres = []
-            for chunk in pd.read_csv(output_file_path, sep=';', compression='gzip', chunksize=50000, dtype=str):
-                chunk_filtre = chunk[chunk['code_postal'] == code_postal]
-                if not chunk_filtre.empty:
-                    chunks_filtres.append(chunk_filtre)
-                    
-            if chunks_filtres:
-                df_final = pd.concat(chunks_filtres, ignore_index=True)
-                if "id" not in df_final.columns:
-                    df_final["id"] = range(len(df_final))
-                df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
+        
+        if output_file_path.exists():
+            if code_postal:
+                chunks_filtres = []
+                for chunk in pd.read_csv(output_file_path, sep=';', compression='gzip', chunksize=50000, dtype=str):
+                    chunk_filtre = chunk[chunk['code_postal'] == code_postal]
+                    if not chunk_filtre.empty:
+                        chunks_filtres.append(chunk_filtre)
 
-            else:
-                logger.warning(f"No addresses were found for INSEE code {code_postal} in this department.")
+                if chunks_filtres:
+                    df_final = pd.concat(chunks_filtres, ignore_index=True)
+                    if "id" not in df_final.columns:
+                        df_final["id"] = range(len(df_final))
+
+                    # Ajouter la construction de la géométrie
+                    gdf = gpd.GeoDataFrame(df_final, geometry=gpd.points_from_xy(df_final['x'], df_final['y']), crs="EPSG:2154")
+                    gdf.to_postgis("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
+            
+            else : 
+                df = pd.read_csv(output_file_path, sep=';', compression='gzip', dtype=str)
+                gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['x'], df['y']), crs="EPSG:2154")
+                gdf.to_postgis("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)   
+
+        else:
+            logger.warning(f"No addresses were found for INSEE code {code_postal} in this department.")
 
 
 def download_and_format_cadastre_data(code_territoire: str, couche: str) -> None:
@@ -141,6 +151,6 @@ def get_cadastre_url(code_territoire: str, couche: str) -> str:
 # ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝                                         
 
 if __name__ == "__main__":
-    for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
-        get_cadastre_url("38080", couche)
-    download_and_format_ban_data("38080")
+    # for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
+    #     get_cadastre_url("38080", couche)
+    download_and_format_ban_data("38")
