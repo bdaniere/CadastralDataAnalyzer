@@ -95,25 +95,6 @@ def download_and_format_ban_data(code_territoire: str) -> None:
                 df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
 
 
-def download_and_format_cadastre_data(code_territoire: str, couche: str) -> None:
-    """
-    Downloads cadastral data for a municipality or department and formats it.
-    """
-
-    url = get_cadastre_url(code_territoire, couche)
-    with TemporaryDirectory() as tmpdirname:
-        output_file_path = Path(tmpdirname) / f"cadastre-{code_territoire}-{couche}.zip"
-
-        download_file(url, output_file_path)
-        gdf = gpd.read_file(output_file_path)
-
-        if "id" not in gdf.columns:
-            gdf["id"] = range(len(gdf))
-
-        logger.debug("Inserting data into the PostgreSQL database...")
-        gdf.to_postgis(couche, schema="raw_data", con=engine, if_exists="replace", index=False)
-
-
 #  ██████╗ █████╗ ██████╗  █████╗ ███████╗████████╗██████╗  █████╗ ██╗         ██████╗  █████╗ ████████╗ █████╗ 
 # ██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║         ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
 # ██║     ███████║██║  ██║███████║███████╗   ██║   ██████╔╝███████║██║         ██║  ██║███████║   ██║   ███████║
@@ -135,6 +116,24 @@ def get_cadastre_url(code_territoire: str, couche: str) -> str:
         return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/communes/{code_territoire}/shp/{couche}"
     else:
         raise ValueError("Invalid code_territoire. Must be a 2-digit department code or a 5-digit commune code.")
+
+def download_and_format_cadastre_data(code_territoire: str, couche: str) -> None:
+    """
+    Downloads cadastral data for a municipality or department and formats it.
+    """
+
+    url = get_cadastre_url(code_territoire, couche)
+    with TemporaryDirectory() as tmpdirname:
+        output_file_path = Path(tmpdirname) / f"cadastre-{code_territoire}-{couche}.zip"
+
+        download_file(url, output_file_path)
+        gdf = gpd.read_file(output_file_path)
+
+        if "id" not in gdf.columns:
+            gdf["id"] = range(len(gdf))
+
+        logger.debug("Inserting data into the PostgreSQL database...")
+        gdf.to_postgis(couche, schema="raw_data", con=engine, if_exists="replace", index=False)
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗ 
