@@ -17,7 +17,8 @@ engine = get_engine()
 # ██║   ██║   ██║   ██║██║     ╚════██║
 # ╚██████╔╝   ██║   ██║███████╗███████║
 #  ╚═════╝    ╚═╝   ╚═╝╚══════╝╚══════╝
-                                     
+
+
 def download_file(url: str, dest_file_path: Path) -> Path:
     """
     Downloads a file from a URL and saves it to the specified location.
@@ -27,9 +28,9 @@ def download_file(url: str, dest_file_path: Path) -> Path:
     # Cheat for avoid timeout
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/gzip, application/octet-stream, */*"
+        "Accept": "application/gzip, application/octet-stream, */*",
     }
-    
+
     try:
         with requests.get(url, headers=headers, stream=True, timeout=60) as response:
             response.raise_for_status()
@@ -41,12 +42,14 @@ def download_file(url: str, dest_file_path: Path) -> Path:
 
     return dest_file_path
 
-# ██████╗  █████╗ ███╗   ██╗    ██████╗  █████╗ ████████╗ █████╗ 
+
+# ██████╗  █████╗ ███╗   ██╗    ██████╗  █████╗ ████████╗ █████╗
 # ██╔══██╗██╔══██╗████╗  ██║    ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
 # ██████╔╝███████║██╔██╗ ██║    ██║  ██║███████║   ██║   ███████║
 # ██╔══██╗██╔══██║██║╚██╗██║    ██║  ██║██╔══██║   ██║   ██╔══██║
 # ██████╔╝██║  ██║██║ ╚████║    ██████╔╝██║  ██║   ██║   ██║  ██║
 # ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+
 
 def formate_code_territoire(code_territoire: str) -> tuple[str, str | None]:
     """
@@ -57,9 +60,11 @@ def formate_code_territoire(code_territoire: str) -> tuple[str, str | None]:
     if len(code_territoire) == 2:
         return code_territoire, None  # Département
     elif len(code_territoire) == 5:
-        return code_territoire[:2], code_territoire   # Commune
+        return code_territoire[:2], code_territoire  # Commune
     else:
-        raise ValueError("Le code du territoire doit être soit un code départemental (2 chiffres) soit un code communal (5 chiffres).")
+        raise ValueError(
+            "Le code du territoire doit être soit un code départemental (2 chiffres) soit un code communal (5 chiffres)."
+        )
 
 
 def download_and_format_ban_data(code_territoire: str) -> None:
@@ -67,7 +72,7 @@ def download_and_format_ban_data(code_territoire: str) -> None:
     Downloads the National Address Database for a municipality or department and formats it.
     """
 
-    dep_code, code_commune = formate_code_territoire(code_territoire) 
+    dep_code, code_commune = formate_code_territoire(code_territoire)
     url = f"https://adresse.data.gouv.fr/data/ban/adresses/latest/csv/adresses-{dep_code}.csv.gz"
 
     with TemporaryDirectory() as tmpdirname:
@@ -75,47 +80,72 @@ def download_and_format_ban_data(code_territoire: str) -> None:
         download_file(url, output_file_path)
 
         if output_file_path.exists():
-            if code_commune:            
+            if code_commune:
                 chunks_filtres = []
-                for chunk in pd.read_csv(output_file_path, sep=';', compression='gzip', chunksize=50000, dtype=str): 
-                    chunk_filtre = chunk[chunk['code_postal'] == code_commune]
+                for chunk in pd.read_csv(
+                    output_file_path,
+                    sep=";",
+                    compression="gzip",
+                    chunksize=50000,
+                    dtype=str,
+                ):
+                    chunk_filtre = chunk[chunk["code_postal"] == code_commune]
                     if not chunk_filtre.empty:
                         chunks_filtres.append(chunk_filtre)
-                        
+
                 if chunks_filtres:
                     df_final = pd.concat(chunks_filtres, ignore_index=True)
-                    if "id" not in df_final.columns:
-                        df_final["id"] = range(len(df_final))
-                    df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
+                    df_final.to_sql(
+                        "base_adresse_nationale",
+                        schema="raw_data",
+                        con=engine,
+                        if_exists="replace",
+                        index=False,
+                    )
 
                 else:
-                    logger.warning(f"No addresses were found for INSEE code {code_commune} in this department.")
-            else : 
-                df_final = pd.read_csv(output_file_path, sep=';', compression='gzip', dtype=str)
-                df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
+                    logger.warning(
+                        f"No addresses were found for INSEE code {code_commune} in this department."
+                    )
+            else:
+                df_final = pd.read_csv(
+                    output_file_path, sep=";", compression="gzip", dtype=str
+                )
+                df_final.to_sql(
+                    "base_adresse_nationale",
+                    schema="raw_data",
+                    con=engine,
+                    if_exists="replace",
+                    index=False,
+                )
 
 
-#  ██████╗ █████╗ ██████╗  █████╗ ███████╗████████╗██████╗  █████╗ ██╗         ██████╗  █████╗ ████████╗ █████╗ 
+#  ██████╗ █████╗ ██████╗  █████╗ ███████╗████████╗██████╗  █████╗ ██╗         ██████╗  █████╗ ████████╗ █████╗
 # ██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║         ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
 # ██║     ███████║██║  ██║███████║███████╗   ██║   ██████╔╝███████║██║         ██║  ██║███████║   ██║   ███████║
 # ██║     ██╔══██║██║  ██║██╔══██║╚════██║   ██║   ██╔══██╗██╔══██║██║         ██║  ██║██╔══██║   ██║   ██╔══██║
 # ╚██████╗██║  ██║██████╔╝██║  ██║███████║   ██║   ██║  ██║██║  ██║███████╗    ██████╔╝██║  ██║   ██║   ██║  ██║
 #  ╚═════╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
-                                                                                                              
+
 
 def get_cadastre_url(code_territoire: str, couche: str) -> str:
     """
     Constructs the URL for downloading cadastral data from cadastre.data.gouv.fr.
     """
-    
-    assert couche in {'communes', 'sections', 'feuilles', 'parcelles', 'batiments'}, "Invalid layer name. Must be one of 'communes', 'sections', 'feuilles', 'parcelles', or 'batiments'."
+
+    assert couche in {"communes", "sections", "feuilles", "parcelles", "batiments"}, (
+        "Invalid layer name. Must be one of 'communes', 'sections', 'feuilles', 'parcelles', or 'batiments'."
+    )
 
     if len(code_territoire) == 2:
         return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/departements/{code_territoire}/shp/{couche}"
-    elif len(code_territoire) == 5: 
+    elif len(code_territoire) == 5:
         return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/communes/{code_territoire}/shp/{couche}"
     else:
-        raise ValueError("Invalid code_territoire. Must be a 2-digit department code or a 5-digit commune code.")
+        raise ValueError(
+            "Invalid code_territoire. Must be a 2-digit department code or a 5-digit commune code."
+        )
+
 
 def download_and_format_cadastre_data(code_territoire: str, couche: str) -> None:
     """
@@ -129,22 +159,21 @@ def download_and_format_cadastre_data(code_territoire: str, couche: str) -> None
         download_file(url, output_file_path)
         gdf = gpd.read_file(output_file_path)
 
-        if "id" not in gdf.columns:
-            gdf["id"] = range(len(gdf))
-
         logger.debug("Inserting data into the PostgreSQL database...")
-        gdf.to_postgis(couche, schema="raw_data", con=engine, if_exists="replace", index=False)
+        gdf.to_postgis(
+            couche, schema="raw_data", con=engine, if_exists="replace", index=False
+        )
 
 
-# ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗ 
-# ██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝ 
+# ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗
+# ██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝
 # ██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗
 # ██║  ██║██╔══╝  ██╔══██╗██║   ██║██║   ██║
 # ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝
-# ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝                                         
+# ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝
 
 
 if __name__ == "__main__":
-    for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
+    for couche in ["communes", "sections", "feuilles", "parcelles", "batiments"]:
         download_and_format_cadastre_data("38", couche)
     download_and_format_ban_data("38")
