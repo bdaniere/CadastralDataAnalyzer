@@ -18,7 +18,7 @@ engine = get_engine()
 # ╚██████╔╝   ██║   ██║███████╗███████║
 #  ╚═════╝    ╚═╝   ╚═╝╚══════╝╚══════╝
                                      
-def download_file(url:str, dest_file_path:Path) -> Path:
+def download_file(url: str, dest_file_path: Path) -> Path:
     """
     Downloads a file from a URL and saves it to the specified location.
     Uses a User-Agent to avoid timeout issues.
@@ -35,11 +35,11 @@ def download_file(url:str, dest_file_path:Path) -> Path:
             response.raise_for_status()
             with open(dest_file_path, "wb") as f:
                 f.writelines(response.iter_content(chunk_size=8192))
-    except requests.exceptions.RequestException:  # noqa: TRY203
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to download {url}: {e}")
         raise
 
     return dest_file_path
- 
 
 # ██████╗  █████╗ ███╗   ██╗    ██████╗  █████╗ ████████╗ █████╗ 
 # ██╔══██╗██╔══██╗████╗  ██║    ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
@@ -62,8 +62,10 @@ def formate_code_territoire(code_territoire: str) -> tuple[str, str | None]:
         raise ValueError("Le code du territoire doit être soit un code départemental (2 chiffres) soit un code communal (5 chiffres).")
 
 
-def download_ban_data(code_territoire:str):
-    """Download the National Address Database for a municipality or department. Import the data into a database."""
+def download_and_format_ban_data(code_territoire: str) -> None:
+    """
+    Downloads the National Address Database for a municipality or department and formats it.
+    """
 
     dep_code, code_commune = formate_code_territoire(code_territoire) 
     url = f"https://adresse.data.gouv.fr/data/ban/adresses/latest/csv/adresses-{dep_code}.csv.gz"
@@ -93,32 +95,9 @@ def download_ban_data(code_territoire:str):
                 df_final.to_sql("base_adresse_nationale", schema="raw_data", con=engine, if_exists="replace", index=False)
 
 
-#  ██████╗ █████╗ ██████╗  █████╗ ███████╗████████╗██████╗  █████╗ ██╗         ██████╗  █████╗ ████████╗ █████╗ 
-# ██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║         ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
-# ██║     ███████║██║  ██║███████║███████╗   ██║   ██████╔╝███████║██║         ██║  ██║███████║   ██║   ███████║
-# ██║     ██╔══██║██║  ██║██╔══██║╚════██║   ██║   ██╔══██╗██╔══██║██║         ██║  ██║██╔══██║   ██║   ██╔══██║
-# ╚██████╗██║  ██║██████╔╝██║  ██║███████║   ██║   ██║  ██║██║  ██║███████╗    ██████╔╝██║  ██║   ██║   ██║  ██║
-#  ╚═════╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
-                                                                                                              
-
-def get_cadastre_url(code_territoire:str, couche:str) -> str:
-    """Construct the URL for downloading cadastral data from cadastre.data.gouv.fr"""
-
-    assert couche in {'communes', 'sections', 'feuilles', 'parcelles', 'batiments'}, "Invalid layer name. Must be one of 'communes', 'sections', 'feuilles', 'parcelles', or 'batiments'."
-
-    if len(code_territoire) == 2:
-        return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/departements/{code_territoire}/shp/{couche}"
-    elif len(code_territoire) == 5: 
-        return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/communes/{code_territoire}/shp/{couche}"
-    else:
-        raise ValueError("Invalid code_territoire. Must be a 2-digit department code or a 5-digit commune code.")
-
-def download_cadastre_data(code_territoire: str, couche: str) -> None:
+def download_and_format_cadastre_data(code_territoire: str, couche: str) -> None:
     """
-    Download cadastral data for a municipality or department from cadastre.data.gouv.fr. 
-    Import the data into a database.
-
-    cadastre doc : https://www.data.gouv.fr/dataservices/api-cadastre
+    Downloads cadastral data for a municipality or department and formats it.
     """
 
     url = get_cadastre_url(code_territoire, couche)
@@ -133,7 +112,29 @@ def download_cadastre_data(code_territoire: str, couche: str) -> None:
 
         logger.debug("Inserting data into the PostgreSQL database...")
         gdf.to_postgis(couche, schema="raw_data", con=engine, if_exists="replace", index=False)
-        
+
+
+#  ██████╗ █████╗ ██████╗  █████╗ ███████╗████████╗██████╗  █████╗ ██╗         ██████╗  █████╗ ████████╗ █████╗ 
+# ██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██║         ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
+# ██║     ███████║██║  ██║███████║███████╗   ██║   ██████╔╝███████║██║         ██║  ██║███████║   ██║   ███████║
+# ██║     ██╔══██║██║  ██║██╔══██║╚════██║   ██║   ██╔══██╗██╔══██║██║         ██║  ██║██╔══██║   ██║   ██╔══██║
+# ╚██████╗██║  ██║██████╔╝██║  ██║███████║   ██║   ██║  ██║██║  ██║███████╗    ██████╔╝██║  ██║   ██║   ██║  ██║
+#  ╚═════╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+                                                                                                              
+
+def get_cadastre_url(code_territoire: str, couche: str) -> str:
+    """
+    Constructs the URL for downloading cadastral data from cadastre.data.gouv.fr.
+    """
+    
+    assert couche in {'communes', 'sections', 'feuilles', 'parcelles', 'batiments'}, "Invalid layer name. Must be one of 'communes', 'sections', 'feuilles', 'parcelles', or 'batiments'."
+
+    if len(code_territoire) == 2:
+        return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/departements/{code_territoire}/shp/{couche}"
+    elif len(code_territoire) == 5: 
+        return f"https://cadastre.data.gouv.fr/bundler/cadastre-etalab/communes/{code_territoire}/shp/{couche}"
+    else:
+        raise ValueError("Invalid code_territoire. Must be a 2-digit department code or a 5-digit commune code.")
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗ 
@@ -146,5 +147,5 @@ def download_cadastre_data(code_territoire: str, couche: str) -> None:
 
 if __name__ == "__main__":
     for couche in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments']:
-        download_cadastre_data("38", couche)
-    download_ban_data("38")
+        download_and_format_cadastre_data("38", couche)
+    download_and_format_ban_data("38")
