@@ -3,4 +3,4 @@ SELECT
     COUNT(*) = 0 AS success,
     COUNT(*) AS error_count
 FROM {schema_name}.{table_name}
-WHERE LENGTH({table_field} > {max_length};
+WHERE LENGTH({table_field}) > {max_length};

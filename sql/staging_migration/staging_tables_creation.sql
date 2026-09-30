@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS staging.parcelles
     prefixe_parcelle VARCHAR(3) NOT NULL,
     code_section VARCHAR(3) NOT NULL,
     numero_parcelle VARCHAR(3) NOT NULL,
-    contenance int NOT NULL,
+    contenance bigint,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     geom GEOMETRY(MULTIPOLYGON, 2154) NOT NULL
