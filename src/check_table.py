@@ -1,6 +1,5 @@
 import json
 import logging
-from glob import glob
 from pathlib import Path
 
 from sqlalchemy import inspect, text
@@ -15,11 +14,25 @@ logger = logging.getLogger(__name__)
 CHECK_REQUEST_PATH = Path(__file__).resolve().parents[1] / "sql" / "raw_data_checks"
 
 
+def load_sql_templates() -> dict[Path, str]:
+    """
+    Load all SQL files into memory just once.
+    """
+
+    templates = {}
+    for sql_file in CHECK_REQUEST_PATH.rglob("*.sql"):
+        templates[sql_file.stem] = sql_file.read_text(encoding="utf-8")
+    return templates
+
+
 def get_tables_with_geometry(connection: Connection, schema: str = "raw_data") -> set:
     """
-    Récupère les tables ayant une colonne géométrique via la vue PostGIS.
-    C'est beaucoup plus rapide que d'interroger le schéma table par table.
+    Retrieves tables with a geometric column using the PostGIS view.
+
+    :param connection: Database connection.
+    :param schema: Schema name to search for geometric columns. Defaults to "raw_data".
     """
+
     query = text("""
         SELECT DISTINCT f_table_name 
         FROM geometry_columns 
@@ -36,7 +49,7 @@ class TableSQLChecker:
     It reads SQL files, executes them, and formats the results.
     """
 
-    def __init__(self, sql_file: str, table_name: str, connection):
+    def __init__(self, sql_request: str, table_name: str, connection):
         """
         Initialize the TableSQLChecker with the SQL file, table name, and database connection.
 
@@ -45,7 +58,7 @@ class TableSQLChecker:
         :param connection: SQLAlchemy database connection.
         """
 
-        self.sql_file = sql_file
+        self.sql_request = sql_request
         self.connection = connection
 
         self.table_name = table_name
@@ -59,13 +72,12 @@ class TableSQLChecker:
         """
 
         additional_format_data = additional_format_data or {}
-        with open(self.sql_file, "r") as file:
-            sql_request = file.read().format(
-                schema_name="raw_data",
-                table_name=self.table_name,
-                geometry_field=self.geometry_field,
-                **additional_format_data,
-            )
+        sql_request = self.sql_request.format(
+            schema_name="raw_data",
+            table_name=self.table_name,
+            geometry_field=self.geometry_field,
+            **additional_format_data,
+        )
 
         result = self.connection.execute(text(sql_request))
         return self.format_result(result)
@@ -97,62 +109,65 @@ def run_all_checks_on_tables(engine) -> dict:
     table_results = {}
     inspector = inspect(engine)
 
+    sql_templates = load_sql_templates()
+
     with open(CHECK_REQUEST_PATH / "raw_data_checks.json") as f:
-        raw_data_check_by_table = json.load(f)
+        checks_by_table_and_field = json.load(f)
 
     with engine.connect() as connection:
         tables_with_geometry = get_tables_with_geometry(connection)
 
         for raw_data_table_name in inspect(connection).get_table_names("raw_data"):
             if inspector.has_table(raw_data_table_name, schema="raw_data"):
-                has_geometry = raw_data_table_name in tables_with_geometry
-
-                check_sql_files = glob(
-                    str(CHECK_REQUEST_PATH / "attribute_checks" / "*.sql")
+                checks_sql = get_generic_checks_set(
+                    sql_templates, raw_data_table_name, tables_with_geometry
                 )
-                if has_geometry:
-                    check_sql_files.extend(
-                        glob(str(CHECK_REQUEST_PATH / "geometry_checks" / "*.sql"))
-                    )
 
                 table_results[raw_data_table_name] = [
                     TableSQLChecker(
-                        check_sql_file, raw_data_table_name, connection
+                        sql_request, raw_data_table_name, connection
                     ).execute_sql()
-                    for check_sql_file in check_sql_files
+                    for sql_request in checks_sql
                 ]
 
                 # Checks from raw_data_checks.json
-                if raw_data_table_name in raw_data_check_by_table:
-                    for check_data in raw_data_check_by_table[raw_data_table_name]:
-                        for check_nickname in check_data["checks"]:
-                            sql_request_path = (
-                                CHECK_REQUEST_PATH
-                                / "table_checks"
-                                / raw_data_check_by_table["check_path"][check_nickname]
-                            )
-
+                if raw_data_table_name in checks_by_table_and_field:
+                    for check_fields in checks_by_table_and_field[raw_data_table_name]:
+                        for sql_request_name in check_fields["checks"]:
                             table_results[raw_data_table_name].append(
                                 TableSQLChecker(
-                                    sql_request_path,
+                                    sql_templates[sql_request_name],
                                     raw_data_table_name,
                                     connection,
                                 ).execute_sql(
                                     {
-                                        "table_field": check_data["field"],
-                                        "max_length": check_data.get(
-                                            "varchar_lenght", None
+                                        "table_field": check_fields["field"],
+                                        "max_length": check_fields.get(
+                                            "varchar_length", None
                                         ),
                                     }
                                 )
                             )
 
-            else:
-                raise ValueError(
-                    f"Table {raw_data_table_name} does not exist in schema 'raw_data'"
-                )
-
     return table_results
+
+
+def get_generic_checks_set(sql_templates, raw_data_table_name, tables_with_geometry):
+    """DOCSTRING TO DO"""
+
+    checks_sql = {
+        sql_content
+        for sql_name, sql_content in sql_templates.items()
+        if sql_name.startswith("A")
+    }
+    if raw_data_table_name in tables_with_geometry:
+        checks_sql = checks_sql.union(
+            sql_content
+            for sql_name, sql_content in sql_templates.items()
+            if sql_name.startswith("G")
+        )
+
+    return checks_sql
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗

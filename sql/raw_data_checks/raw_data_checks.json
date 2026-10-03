@@ -1,57 +1,52 @@
 {
-    "check_path": {
-        "T1": "T1_NotNullValues_checks.sql",
-        "T2": "T2_UniqueValues_checks.sql",
-        "T3": "T3_MaxVarcharLength_checks.sql"
-    },
     "parcelles": [
         {
             "field": "id",
             "checks": [
-                "T1",
-                "T2",
-                "T3"
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 15
+            "varchar_length": 15
         },
         {
             "field": "commune",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 5
+            "varchar_length": 5
         },
         {
             "field": "prefixe",
             "checks": [
-                "T1",
-                "T2",
-                "T3"
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 3
+            "varchar_length": 3
         },
         {
             "field": "section",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 3
+            "varchar_length": 3
         },
         {
             "field": "numero",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 3
+            "varchar_length": 3
         },
         {
             "field": "geometry",
             "checks": [
-                "T1",
-                "T2"
+                "T1_NotNullValues",
+                "T2_UniqueValues"
             ]
         }
     ],
@@ -59,26 +54,26 @@
         {
             "field": "id",
             "checks": [
-                "T1",
-                "T2",
-                "T3"
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 5
+            "varchar_length": 5
         },
         {
             "field": "nom",
             "checks": [
-                "T1",
-                "T2",
-                "T3"
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 255
+            "varchar_length": 255
         },
         {
             "field": "geometry",
             "checks": [
-                "T1",
-                "T2"
+                "T1_NotNullValues",
+                "T2_UniqueValues"
             ]
         }
     ],
@@ -86,75 +81,75 @@
         {
             "field": "id",
             "checks": [
-                "T1",
-                "T2"
+                "T1_NotNullValues",
+                "T2_UniqueValues"
             ]
         },
         {
             "field": "nom_voie",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 255
+            "varchar_length": 255
         },
         {
             "field": "code_postal",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 5
+            "varchar_length": 5
         },
         {
             "field": "code_insee",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 5
+            "varchar_length": 5
         },
         {
             "field": "nom_commune",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 255
+            "varchar_length": 255
         },
         {
             "field": "type_position",
             "checks": [
-                "T3"
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 30
+            "varchar_length": 30
         },
         {
             "field": "source_position",
             "checks": [
-                "T3"
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 30
+            "varchar_length": 30
         },
         {
             "field": "source_nom_voie",
             "checks": [
-                "T3"
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 30
+            "varchar_length": 30
         },
         {
             "field": "cad_parcelles",
             "checks": [
-                "T3"
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 15
+            "varchar_length": 15
         },
         {
             "field": "geometry",
             "checks": [
-                "T1",
-                "T2"
+                "T1_NotNullValues",
+                "T2_UniqueValues"
             ]
         }
     ],
@@ -162,31 +157,31 @@
         {
             "field": "commune",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 5
+            "varchar_length": 5
         },
         {
             "field": "nom",
             "checks": [
-                "T3"
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 255
+            "varchar_length": 255
         },
         {
             "field": "type",
             "checks": [
-                "T1",
-                "T3"
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
             ],
-            "varchar_lenght": 3
+            "varchar_length": 3
         },
         {
             "field": "geometry",
             "checks": [
-                "T1",
-                "T2"
+                "T1_NotNullValues",
+                "T2_UniqueValues"
             ]
         }
     ]
