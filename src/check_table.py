@@ -13,12 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 CHECK_REQUEST_PATH = Path(__file__).resolve().parents[1] / "sql" / "raw_data_checks"
-RAW_DATA_TABLES = [
-    "communes",
-    "parcelles",
-    "batiments",
-    "base_adresse_nationale",
-]
 
 
 class TableSQLChecker:
@@ -92,7 +86,7 @@ def run_all_checks_on_tables(engine) -> dict:
         raw_data_check_by_table = json.load(f)
 
     with engine.connect() as connection:
-        for raw_data_table_name in RAW_DATA_TABLES:
+        for raw_data_table_name in inspect(connection).get_table_names("raw_data"):
             if inspector.has_table(raw_data_table_name, schema="raw_data"):
                 columns = inspector.get_columns(raw_data_table_name, schema="raw_data")
                 has_geometry = any(isinstance(col["type"], Geometry) for col in columns)
@@ -113,28 +107,29 @@ def run_all_checks_on_tables(engine) -> dict:
                 ]
 
                 # Checks from raw_data_checks.json
-                for check_data in raw_data_check_by_table[raw_data_table_name]:
-                    for check_nickname in check_data["checks"]:
-                        sql_request_path = (
-                            CHECK_REQUEST_PATH
-                            / "table_checks"
-                            / raw_data_check_by_table["check_path"][check_nickname]
-                        )
-
-                        table_results[raw_data_table_name].append(
-                            TableSQLChecker(
-                                sql_request_path,
-                                raw_data_table_name,
-                                connection,
-                            ).execute_sql(
-                                {
-                                    "table_field": check_data["field"],
-                                    "max_length": check_data.get(
-                                        "varchar_lenght", None
-                                    ),
-                                }
+                if raw_data_table_name in raw_data_check_by_table:
+                    for check_data in raw_data_check_by_table[raw_data_table_name]:
+                        for check_nickname in check_data["checks"]:
+                            sql_request_path = (
+                                CHECK_REQUEST_PATH
+                                / "table_checks"
+                                / raw_data_check_by_table["check_path"][check_nickname]
                             )
-                        )
+
+                            table_results[raw_data_table_name].append(
+                                TableSQLChecker(
+                                    sql_request_path,
+                                    raw_data_table_name,
+                                    connection,
+                                ).execute_sql(
+                                    {
+                                        "table_field": check_data["field"],
+                                        "max_length": check_data.get(
+                                            "varchar_lenght", None
+                                        ),
+                                    }
+                                )
+                            )
 
             else:
                 raise ValueError(
@@ -153,4 +148,13 @@ def run_all_checks_on_tables(engine) -> dict:
 
 if __name__ == "__main__":
     results = run_all_checks_on_tables(engine)
-    print(results)
+
+    for not_pass in [
+        (table_name, ii)
+        for table_name, values in results.items()
+        for ii in values
+        if ii["success"] == False
+    ]:
+        print(not_pass)
+
+    breakpoint()
