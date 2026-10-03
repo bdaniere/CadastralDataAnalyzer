@@ -3,8 +3,8 @@ import logging
 from glob import glob
 from pathlib import Path
 
-from geoalchemy2 import Geometry
 from sqlalchemy import inspect, text
+from sqlalchemy.engine import Connection
 
 from utils import get_engine
 
@@ -13,6 +13,21 @@ logger = logging.getLogger(__name__)
 
 
 CHECK_REQUEST_PATH = Path(__file__).resolve().parents[1] / "sql" / "raw_data_checks"
+
+
+def get_tables_with_geometry(connection: Connection, schema: str = "raw_data") -> set:
+    """
+    Récupère les tables ayant une colonne géométrique via la vue PostGIS.
+    C'est beaucoup plus rapide que d'interroger le schéma table par table.
+    """
+    query = text("""
+        SELECT DISTINCT f_table_name 
+        FROM geometry_columns 
+        WHERE f_table_schema = :schema
+    """)
+
+    result = connection.execute(query, {"schema": schema})
+    return {row[0] for row in result}
 
 
 class TableSQLChecker:
@@ -86,10 +101,11 @@ def run_all_checks_on_tables(engine) -> dict:
         raw_data_check_by_table = json.load(f)
 
     with engine.connect() as connection:
+        tables_with_geometry = get_tables_with_geometry(connection)
+
         for raw_data_table_name in inspect(connection).get_table_names("raw_data"):
             if inspector.has_table(raw_data_table_name, schema="raw_data"):
-                columns = inspector.get_columns(raw_data_table_name, schema="raw_data")
-                has_geometry = any(isinstance(col["type"], Geometry) for col in columns)
+                has_geometry = raw_data_table_name in tables_with_geometry
 
                 check_sql_files = glob(
                     str(CHECK_REQUEST_PATH / "attribute_checks" / "*.sql")
