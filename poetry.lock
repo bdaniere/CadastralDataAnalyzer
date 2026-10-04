@@ -635,6 +635,28 @@ geopandas = ["geopandas"]
 test = ["pytest", "pytest-cov"]
 
 [[package]]
+name = "pypdf"
+version = "6.19.0"
+description = "A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "pypdf-6.19.0-py3-none-any.whl", hash = "sha256:7e5d6e730e7dae87d560a2cee218b852f6498c8be61966f3cd02ead971e48d14"},
+    {file = "pypdf-6.19.0.tar.gz", hash = "sha256:bbc43aca292369ccc6cbc8a921991ecf2538a3587ab5a116eff06c321d647155"},
+]
+
+[package.extras]
+crypto = ["cryptography (>3.0)"]
+cryptodome = ["PyCryptodome"]
+dev = ["flit", "pip-tools", "pre-commit", "pytest-cov", "pytest-socket", "pytest-timeout", "pytest-xdist", "wheel"]
+docs = ["myst_parser", "sphinx", "sphinx_rtd_theme"]
+fonts = ["fonttools"]
+full = ["Pillow (>=8.0.0)", "arabic-reshaper", "cryptography (>3.0)", "fonttools", "python-bidi"]
+image = ["Pillow (>=8.0.0)"]
+rtl-text = ["arabic-reshaper", "python-bidi"]
+
+[[package]]
 name = "pyproj"
 version = "3.8.0"
 description = "Python interface to PROJ (cartographic projections and coordinate transformations library)"
@@ -977,4 +999,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.14.0"
-content-hash = "9efb86c55bec10fbc7ed653d5fe39ca50015e3af3730788fed99462888a686f0"
+content-hash = "afbdfb4bbbbeac8a9425a01caecbd053c2029c2c9aab2c36915a3b72192abaf7"
