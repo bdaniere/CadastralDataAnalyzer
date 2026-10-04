@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Connection
 
-from utils import get_engine
+from src.utils import get_engine
 
 # ██╗   ██╗████████╗██╗██╗     ███████╗
 # ██║   ██║╚══██╔══╝██║██║     ██╔════╝
