@@ -7,7 +7,7 @@ import geopandas as gpd
 import pandas as pd
 import requests
 
-from utils import get_engine
+from src.utils import get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -168,9 +168,10 @@ class GeospatialDatasetImporter:
             extention (str): The extension of the file.
         """
 
+        self.engine = engine
         self.url = url
         self.name = re.sub(r"[^a-zA-Z0-9_]", "_", name.lower())
-        self.extention = extention
+        self.extention = extention.lstrip(".")
 
         self.session = requests.Session()
         self.session.headers.update(
@@ -184,6 +185,11 @@ class GeospatialDatasetImporter:
         """
         Downloads the file from the specified URL and sends it to the database.
         """
+        if self.engine is None:
+            raise ValueError(
+                "An SQLAlchemy engine is required to write data into PostGIS."
+            )
+
         with TemporaryDirectory() as tmpdirname:
             output_file_path = Path(tmpdirname) / self.filename
 
@@ -194,7 +200,7 @@ class GeospatialDatasetImporter:
             gdf.to_postgis(
                 self.name,
                 schema="raw_data",
-                con=engine,
+                con=self.engine,
                 if_exists="replace",
                 index=False,
             )
@@ -206,7 +212,14 @@ class GeospatialDatasetImporter:
 
         logger.info("Reading file with GeoPandas")
         gdf = gpd.read_file(dest_file_path)
-        if gdf.crs != "EPSG:2154":
+        current_crs = getattr(gdf, "crs", None)
+
+        if current_crs is None:
+            gdf = gdf.to_crs("EPSG:2154")
+        elif isinstance(current_crs, str):
+            if current_crs.upper() != "EPSG:2154":
+                gdf = gdf.to_crs("EPSG:2154")
+        elif current_crs.to_epsg() != 2154:
             gdf = gdf.to_crs("EPSG:2154")
 
         return gdf
@@ -241,6 +254,8 @@ class GeospatialDatasetImporter:
     @property
     def filename(self):
         return f"{self.name}.{self.extention}"
+
+    session = None
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗
