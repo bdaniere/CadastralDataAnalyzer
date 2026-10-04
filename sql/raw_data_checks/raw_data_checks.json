@@ -1,0 +1,188 @@
+{
+    "parcelles": [
+        {
+            "field": "id",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 15
+        },
+        {
+            "field": "commune",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 5
+        },
+        {
+            "field": "prefixe",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 3
+        },
+        {
+            "field": "section",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 3
+        },
+        {
+            "field": "numero",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 4
+        },
+        {
+            "field": "geometry",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues"
+            ]
+        }
+    ],
+    "communes": [
+        {
+            "field": "id",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 5
+        },
+        {
+            "field": "nom",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 255
+        },
+        {
+            "field": "geometry",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues"
+            ]
+        }
+    ],
+    "base_adresse_nationale": [
+        {
+            "field": "id",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues"
+            ]
+        },
+        {
+            "field": "nom_voie",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 255
+        },
+        {
+            "field": "code_postal",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 5
+        },
+        {
+            "field": "code_insee",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 5
+        },
+        {
+            "field": "nom_commune",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 255
+        },
+        {
+            "field": "type_position",
+            "checks": [
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 30
+        },
+        {
+            "field": "source_position",
+            "checks": [
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 30
+        },
+        {
+            "field": "source_nom_voie",
+            "checks": [
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 30
+        },
+        {
+            "field": "cad_parcelles",
+            "checks": [
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 15
+        },
+        {
+            "field": "geometry",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues"
+            ]
+        }
+    ],
+    "batiments": [
+        {
+            "field": "commune",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 5
+        },
+        {
+            "field": "nom",
+            "checks": [
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 255
+        },
+        {
+            "field": "type",
+            "checks": [
+                "T1_NotNullValues",
+                "T3_MaxVarcharLength"
+            ],
+            "varchar_length": 3
+        },
+        {
+            "field": "geometry",
+            "checks": [
+                "T1_NotNullValues",
+                "T2_UniqueValues"
+            ]
+        }
+    ]
+}

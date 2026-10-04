@@ -1,9 +1,0 @@
-
-
--- Vérification du SRID
-SELECT DISTINCT ST_SRID(geom)
-FROM {schema_name}.{table_name};
-
--- Vérification des types de géométries
-SELECT DISTINCT GeometryType(geom)
-FROM {schema_name}.{table_name};

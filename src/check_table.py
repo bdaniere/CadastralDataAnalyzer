@@ -1,113 +1,186 @@
+import json
 import logging
-from glob import glob
 from pathlib import Path
 
-from geoalchemy2 import Geometry
 from sqlalchemy import inspect, text
+from sqlalchemy.engine import Connection
 
-from utils import get_engine
+from src.utils import get_engine
 
-engine = get_engine()
+# ██╗   ██╗████████╗██╗██╗     ███████╗
+# ██║   ██║╚══██╔══╝██║██║     ██╔════╝
+# ██║   ██║   ██║   ██║██║     ███████╗
+# ██║   ██║   ██║   ██║██║     ╚════██║
+# ╚██████╔╝   ██║   ██║███████╗███████║
+#  ╚═════╝    ╚═╝   ╚═╝╚══════╝╚══════╝
+
 logger = logging.getLogger(__name__)
 
+CHECK_REQUEST_PATH = Path(__file__).resolve().parents[1] / "sql" / "raw_data_checks"
 
-CHECK_REQUEST_PATH = Path(__file__).resolve().parents[1] / 'sql' / 'raw_data_checks'
+
+def load_sql_templates() -> dict[str, str]:
+    """Load all SQL files into memory once, preserving a deterministic order."""
+
+    templates: dict[str, str] = {}
+    for sql_file in sorted(CHECK_REQUEST_PATH.rglob("*.sql")):
+        key = sql_file.stem
+        templates[key] = sql_file.read_text(encoding="utf-8")
+    return templates
+
+
+def get_tables_with_geometry(
+    connection: Connection, schema: str = "raw_data"
+) -> set[str]:
+    """Return all tables that contain a geometry column in the target schema."""
+
+    query = text(
+        """
+        SELECT DISTINCT f_table_name
+        FROM geometry_columns
+        WHERE f_table_schema = :schema
+        """
+    )
+    result = connection.execute(query, {"schema": schema})
+    return {row[0] for row in result}
+
+
+# ████████╗ █████╗ ██████╗ ██╗     ███████╗    ███████╗ ██████╗ ██╗          ██████╗██╗  ██╗███████╗ ██████╗██╗  ██╗███████╗██████╗
+# ╚══██╔══╝██╔══██╗██╔══██╗██║     ██╔════╝    ██╔════╝██╔═══██╗██║         ██╔════╝██║  ██║██╔════╝██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+#    ██║   ███████║██████╔╝██║     █████╗      ███████╗██║   ██║██║         ██║     ███████║█████╗  ██║     █████╔╝ █████╗  ██████╔╝
+#    ██║   ██╔══██║██╔══██╗██║     ██╔══╝      ╚════██║██║▄▄ ██║██║         ██║     ██╔══██║██╔══╝  ██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+#    ██║   ██║  ██║██████╔╝███████╗███████╗    ███████║╚██████╔╝███████╗    ╚██████╗██║  ██║███████╗╚██████╗██║  ██╗███████╗██║  ██║
+#    ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚══════╝╚══════╝    ╚══════╝ ╚══▀▀═╝ ╚══════╝     ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+
 
 class TableSQLChecker:
-    """
-    Class to check SQL conditions on a specific table.
-    It reads SQL files, executes them, and formats the results.
-    """
+    """Execute one SQL validation on a specific table and format the result."""
 
-    def __init__(self, sql_file: str, table_name: str, connection):
-        """
-        Initialize the TableSQLChecker with the SQL file, table name, and database connection.
-
-        :param sql_file: Path to the SQL file containing the check.
-        :param table_name: Name of the table to check.
-        :param connection: SQLAlchemy database connection.
-        """
-
-        self.sql_file = sql_file
+    def __init__(self, sql_request: str, table_name: str, connection):
+        self.sql_request = sql_request
         self.connection = connection
-
         self.table_name = table_name
         self.geometry_field = "geometry"
+        self.schema_name = "raw_data"
 
-    def execute_sql(self) -> dict:
-        """
-        Execute the SQL check on the table.
+    def execute_sql(self, additional_format_data: dict | None = None) -> dict:
+        """Execute the SQL check and return a normalized result dictionary."""
 
-        :return: Formatted result of the SQL check.
-        """
+        format_data = {
+            "schema_name": self.schema_name,
+            "table_name": self.table_name,
+            "geometry_field": self.geometry_field,
+        }
+        if additional_format_data:
+            format_data.update(additional_format_data)
 
-        with open(self.sql_file, 'r') as file:
-            sql_request = file.read().format(schema_name="raw_data", table_name=self.table_name, geometry_field=self.geometry_field)
+        sql_request = self.sql_request.format(**format_data)
+        result = self.connection.execute(text(sql_request))
+        return self.format_result(result)
 
-        self.result = self.connection.execute(text(sql_request))
-        return self.format_result()
+    @staticmethod
+    def format_result(result) -> dict:
+        """Normalize a DB result into a dict, even when the query returns no row."""
+
+        row = result.fetchone()
+        if row is None:
+            return {
+                "control_name": None,
+                "success": False,
+                "numeric_value": None,
+            }
+
+        return {
+            "control_name": row[0],
+            "success": bool(row[1]),
+            "numeric_value": row[2] if len(row) > 2 else None,
+        }
 
 
-    def format_result(self) -> dict:
-        """
-        TO DO : revoir le fonctionnement : pour le moment c'est OK // mais pas stable
-        """
-
-        result_fetchall = self.result.fetchall()
-        if isinstance(result_fetchall, list) and not result_fetchall:
-            value = 0
-        else:
-            value = result_fetchall[0][0]
-
-        return {"check" : Path(self.sql_file).stem, "status" : None, "value" : value}
+# ███╗   ███╗ █████╗ ██╗███╗   ██╗
+# ████╗ ████║██╔══██╗██║████╗  ██║
+# ██╔████╔██║███████║██║██╔██╗ ██║
+# ██║╚██╔╝██║██╔══██║██║██║╚██╗██║
+# ██║ ╚═╝ ██║██║  ██║██║██║ ╚████║
+# ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝
 
 
-def run_all_checks_on_tables(engine) -> list:
-    """
-    Run all SQL checks on all raw data tables.
+def run_all_checks_on_tables(engine) -> dict:
+    """Run all SQL checks on the tables in the raw_data schema."""
 
-    :param engine: SQLAlchemy database engine.
-    :return: List of results for all tables and checks.
-    """
+    table_results: dict[str, list[dict]] = {}
+    sql_templates = load_sql_templates()
 
-    table_results = []
-    inspector = inspect(engine)
+    with open(CHECK_REQUEST_PATH / "raw_data_checks.json", encoding="utf-8") as f:
+        checks_by_table_and_field = json.load(f)
 
-    for raw_data_table_name in ['communes', 'sections', 'feuilles', 'parcelles', 'batiments', 'base_adresse_nationale']:
-        results = []
-        if inspector.has_table(raw_data_table_name, schema="raw_data"):
-            columns = inspector.get_columns(raw_data_table_name, schema="raw_data")
-            has_geometry = any(isinstance(col["type"], Geometry) for col in columns)
+    with engine.connect() as connection:
+        inspector = inspect(connection)
+        tables_with_geometry = get_tables_with_geometry(connection)
 
-            sql_request_filepaths = glob(str(CHECK_REQUEST_PATH / "attribute_checks" / '*.sql'))
-            if has_geometry:
-                sql_request_filepaths.extend(glob(str(CHECK_REQUEST_PATH / "geometry_checks" / '*.sql')))
-            
-            with engine.connect() as connection:
-                table_results.extend(
-                    TableSQLChecker(sql_request_filepath, raw_data_table_name, connection).execute_sql()
-                    for sql_request_filepath in sql_request_filepaths
-                )
+        for raw_data_table_name in inspector.get_table_names(schema="raw_data"):
+            if not inspector.has_table(raw_data_table_name, schema="raw_data"):
+                continue
 
-                
-        else :
-            logger.error(f"Table {raw_data_table_name} does not exist in schema 'raw_data'")
-            results.append({"check" : "table_exists", "status" : "error", "value" : f"Table {raw_data_table_name} does not exist in schema 'raw_data'"})
+            checks_sql = get_generic_checks_set(
+                sql_templates, raw_data_table_name, tables_with_geometry
+            )
+            table_results[raw_data_table_name] = [
+                TableSQLChecker(
+                    sql_request, raw_data_table_name, connection
+                ).execute_sql()
+                for sql_request in checks_sql
+            ]
 
-        table_results.extend(results)
+            if raw_data_table_name in checks_by_table_and_field:
+                for check_fields in checks_by_table_and_field[raw_data_table_name]:
+                    for sql_request_name in check_fields["checks"]:
+                        table_results[raw_data_table_name].append(
+                            TableSQLChecker(
+                                sql_templates[sql_request_name],
+                                raw_data_table_name,
+                                connection,
+                            ).execute_sql(
+                                {
+                                    "table_field": check_fields["field"],
+                                    "max_length": check_fields.get("varchar_length"),
+                                }
+                            )
+                        )
 
     return table_results
 
 
+def get_generic_checks_set(sql_templates, raw_data_table_name, tables_with_geometry):
+    """Return the generic A/G SQL checks in deterministic order for a table."""
 
-# ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗ 
-# ██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝ 
+    checks_sql = {
+        sql_content
+        for sql_name, sql_content in sql_templates.items()
+        if sql_name.startswith("A")
+    }
+    if raw_data_table_name in tables_with_geometry:
+        checks_sql = checks_sql.union(
+            sql_content
+            for sql_name, sql_content in sql_templates.items()
+            if sql_name.startswith("G")
+        )
+
+    return checks_sql
+
+
+# ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗
+# ██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝
 # ██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗
 # ██║  ██║██╔══╝  ██╔══██╗██║   ██║██║   ██║
 # ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝
-# ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝                                         
+# ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝
 
 if __name__ == "__main__":
-    
-        results = run_all_checks_on_tables(engine)
-        print(results)
+    engine = get_engine()
+    results = run_all_checks_on_tables(engine)
+
+    for table_name, values in results.items():
+        for item in values:
+            if item["success"] is False:
+                print((table_name, item))
