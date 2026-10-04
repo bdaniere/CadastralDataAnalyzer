@@ -9,3 +9,5 @@ FROM (
     GROUP BY geom_hash
     HAVING COUNT(*) > 1
 ) AS duplicates;
+
+

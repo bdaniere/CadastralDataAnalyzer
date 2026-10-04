@@ -40,7 +40,7 @@
                 "T1_NotNullValues",
                 "T3_MaxVarcharLength"
             ],
-            "varchar_length": 3
+            "varchar_length": 4
         },
         {
             "field": "geometry",
