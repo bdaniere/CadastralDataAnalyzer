@@ -5,6 +5,7 @@ from functools import cached_property
 from pathlib import Path
 
 import pdfplumber
+from pdfplumber.page import Page as pdfplumber_page
 from pypdf import PdfReader
 
 # ██████╗  ██████╗  ██████╗██╗   ██╗███╗   ███╗███████╗███╗   ██╗████████╗    ██╗███╗   ██╗███████╗ ██████╗██████╗ ███████╗ ██████╗████████╗ ██████╗ ██████╗
@@ -165,39 +166,63 @@ class FlattenedPDFParser(ParserFactory):
         results = {"DT": {}, "DICT": {}, "GLOBAL": {}}
 
         with pdfplumber.open(self.file_path) as pdf_file:
-            # TO DO : itération sur les différentes pages du PDF
             for page in pdf_file.pages:
-                # page = pdf.pages[0]
-
                 if not (abs(page.width - 595) < 2 and abs(page.height - 842) < 2):
                     raise NotImplementedError(
                         "Page dimensions are not A4 / rezise need ?"
                     )
 
                 if self._is_dt_dict_cerfa(page):
-                    # The Cerfa draws input boxes with the "casesaremplir" font (glyphs a/b/c)
-                    # Underscores in the form font are the printed input guides, not values
-                    page = page.filter(
-                        lambda obj: (
-                            "casesaremplir" not in obj.get("fontname", "").lower()
-                            and not (
-                                obj.get("text") == "_"
-                                and "helvetica" not in obj["fontname"].lower()
-                            )
-                        )
-                    )
+                    results = self.extract_cerfa_data(page, results)
 
-                    for field_name, field in self.template_cerfa["fields"].items():
-                        category, name = field_name.split(".", 1)
-                        area = self._crop_center(page, tuple(field["bbox"]))
-                        text = (area.extract_text() or "").strip()
+        return results
 
-                        if field["type"] == "checkbox":
-                            results[category][name] = bool(text)
-                        elif field["type"] == "date":
-                            results[category][name] = self._parse_date(text)
-                        else:
-                            results[category][name] = text or None
+    def _is_dt_dict_cerfa(self, page: pdfplumber_page) -> bool:
+        """
+        Check if the page matches the DT_DICT cerfa template.
+
+        TO DO : Verification is currently limited to Cerfa form 14434*03
+        """
+
+        check_fields = {}
+        for field_name, field in self.template_cerfa_detection["fields"].items():
+            area = self._crop_center(page, tuple(field["bbox"]))
+            text = (area.extract_text() or "").strip()
+            check_fields[field_name] = text
+
+        return check_fields == {
+            "GLOBAL.titre": "Déclaration de projet de Travaux\nDéclaration d’Intention de Commencement de Travaux",
+            "GLOBAL.cerfa_numero": "N° 14434*03",
+        }
+
+    def extract_cerfa_data(self, page: pdfplumber_page, results: dict) -> dict:
+        """
+        Extract data from the DT_DICT cerfa page.
+
+        Returns a dictionary with the extracted field values.
+        """
+
+        page = page.filter(
+            lambda obj: (
+                "casesaremplir" not in obj.get("fontname", "").lower()
+                and not (
+                    obj.get("text") == "_"
+                    and "helvetica" not in obj["fontname"].lower()
+                )
+            )
+        )
+
+        for field_name, field in self.template_cerfa["fields"].items():
+            category, name = field_name.split(".", 1)
+            area = self._crop_center(page, tuple(field["bbox"]))
+            text = (area.extract_text() or "").strip()
+
+            if field["type"] == "checkbox":
+                results[category][name] = bool(text)
+            elif field["type"] == "date":
+                results[category][name] = self._parse_date(text)
+            else:
+                results[category][name] = text or None
 
         return results
 
@@ -219,24 +244,6 @@ class FlattenedPDFParser(ParserFactory):
             return datetime.strptime("".join(text.split()), "%d/%m/%Y").date()
         except ValueError:
             return None
-
-    def _is_dt_dict_cerfa(self, page) -> bool:
-        """
-        Check if the page matches the DT_DICT cerfa template.
-
-        TO DO : Verification is currently limited to Cerfa form 14434*03
-        """
-
-        check_fields = {}
-        for field_name, field in self.template_cerfa_detection["fields"].items():
-            area = self._crop_center(page, tuple(field["bbox"]))
-            text = (area.extract_text() or "").strip()
-            check_fields[field_name] = text
-
-        return check_fields == {
-            "GLOBAL.titre": "Déclaration de projet de Travaux\nDéclaration d’Intention de Commencement de Travaux",
-            "GLOBAL.cerfa_numero": "N° 14434*03",
-        }
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗
