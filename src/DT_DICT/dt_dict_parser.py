@@ -144,13 +144,19 @@ class FlattenedPDFParser(ParserFactory):
         super().__init__(file_path)
         self.reader = PdfReader(file_path)
 
-        template_path = Path("template_14434_03.json")
-        with open(template_path, encoding="utf-8") as f:
-            self.template = json.load(f)
+        with open("template_14434_03.json", encoding="utf-8") as f:
+            self.template_cerfa = json.load(f)
+
+        with open("template_cerfa_detection.json", encoding="utf-8") as f:
+            self.template_cerfa_detection = json.load(f)
 
     def read_content(self) -> dict:
         """
         Read the content of the first page of the PDF.
+
+        TO DO :
+         - présence de plusieurs cerfa dans un document en entré
+         - Aucun cerfa détecté
 
         Returns:
             dict: A dictionary containing the parsed content of the PDF.
@@ -158,36 +164,40 @@ class FlattenedPDFParser(ParserFactory):
 
         results = {"DT": {}, "DICT": {}, "GLOBAL": {}}
 
-        with pdfplumber.open(self.file_path) as pdf:
+        with pdfplumber.open(self.file_path) as pdf_file:
             # TO DO : itération sur les différentes pages du PDF
-            page = pdf.pages[0]
+            for page in pdf_file.pages:
+                # page = pdf.pages[0]
 
-            if not (abs(page.width - 595) < 2 and abs(page.height - 842) < 2):
-                raise NotImplementedError("Page dimensions are not A4 / rezise need ?")
-
-            # The Cerfa draws input boxes with the "casesaremplir" font (glyphs a/b/c)
-            # Underscores in the form font are the printed input guides, not values
-            page = page.filter(
-                lambda obj: (
-                    "casesaremplir" not in obj.get("fontname", "").lower()
-                    and not (
-                        obj.get("text") == "_"
-                        and "helvetica" not in obj["fontname"].lower()
+                if not (abs(page.width - 595) < 2 and abs(page.height - 842) < 2):
+                    raise NotImplementedError(
+                        "Page dimensions are not A4 / rezise need ?"
                     )
-                )
-            )
 
-            for field_name, field in self.template["fields"].items():
-                category, name = field_name.split(".", 1)
-                area = self._crop_center(page, tuple(field["bbox"]))
-                text = (area.extract_text() or "").strip()
+                if self._is_dt_dict_cerfa(page):
+                    # The Cerfa draws input boxes with the "casesaremplir" font (glyphs a/b/c)
+                    # Underscores in the form font are the printed input guides, not values
+                    page = page.filter(
+                        lambda obj: (
+                            "casesaremplir" not in obj.get("fontname", "").lower()
+                            and not (
+                                obj.get("text") == "_"
+                                and "helvetica" not in obj["fontname"].lower()
+                            )
+                        )
+                    )
 
-                if field["type"] == "checkbox":
-                    results[category][name] = bool(text)
-                elif field["type"] == "date":
-                    results[category][name] = self._parse_date(text)
-                else:
-                    results[category][name] = text or None
+                    for field_name, field in self.template_cerfa["fields"].items():
+                        category, name = field_name.split(".", 1)
+                        area = self._crop_center(page, tuple(field["bbox"]))
+                        text = (area.extract_text() or "").strip()
+
+                        if field["type"] == "checkbox":
+                            results[category][name] = bool(text)
+                        elif field["type"] == "date":
+                            results[category][name] = self._parse_date(text)
+                        else:
+                            results[category][name] = text or None
 
         return results
 
@@ -210,8 +220,23 @@ class FlattenedPDFParser(ParserFactory):
         except ValueError:
             return None
 
-    def _is_dt_dict_cerfa(self) -> bool:
-        return False
+    def _is_dt_dict_cerfa(self, page) -> bool:
+        """
+        Check if the page matches the DT_DICT cerfa template.
+
+        TO DO : Verification is currently limited to Cerfa form 14434*03
+        """
+
+        check_fields = {}
+        for field_name, field in self.template_cerfa_detection["fields"].items():
+            area = self._crop_center(page, tuple(field["bbox"]))
+            text = (area.extract_text() or "").strip()
+            check_fields[field_name] = text
+
+        return check_fields == {
+            "GLOBAL.titre": "Déclaration de projet de Travaux\nDéclaration d’Intention de Commencement de Travaux",
+            "GLOBAL.cerfa_numero": "N° 14434*03",
+        }
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗
