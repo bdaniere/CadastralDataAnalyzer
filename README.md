@@ -50,7 +50,7 @@ Pour installer et utiliser ce projet, suivez les étapes suivantes :
 3. **Exécution du script** :
    - Exécutez le script principal `download_data.py` :
      ```bash
-     docker-compose run --rm app python src/download_data.py
+     docker-compose run --rm app python src/Base_data_creation/download_data.py
      ```
 
 ## Contribuer

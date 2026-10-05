@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from src.download_data import (
+from src.Base_data_creation.download_data import (
     GeospatialDatasetImporter,
     download_file,
     formate_code_territoire,
@@ -126,7 +126,9 @@ def test_geospatial_dataset_importer_load_geodataframe_uses_epsg_2154(monkeypatc
 
     fake_gdf = FakeGeoDataFrame()
 
-    monkeypatch.setattr("src.download_data.gpd.read_file", lambda path: fake_gdf)
+    monkeypatch.setattr(
+        "src.Base_data_creation.download_data.gpd.read_file", lambda path: fake_gdf
+    )
 
     importer = GeospatialDatasetImporter(
         None, "https://example.com/data", "test", ".geojson"

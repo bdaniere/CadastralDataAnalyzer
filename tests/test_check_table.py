@@ -1,4 +1,4 @@
-from src.check_table import TableSQLChecker, get_generic_checks_set
+from src.Base_data_creation.check_table import TableSQLChecker, get_generic_checks_set
 
 
 class TestCheckTable:

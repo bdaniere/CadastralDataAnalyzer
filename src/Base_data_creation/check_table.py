@@ -16,7 +16,7 @@ from src.utils import get_engine
 
 logger = logging.getLogger(__name__)
 
-CHECK_REQUEST_PATH = Path(__file__).resolve().parents[1] / "sql" / "raw_data_checks"
+CHECK_REQUEST_PATH = Path(__file__).resolve().parents[2] / "sql" / "raw_data_checks"
 
 
 def load_sql_templates() -> dict[str, str]:
