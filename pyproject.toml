@@ -13,6 +13,7 @@ geoalchemy2 = "^0.20.0"
 sqlalchemy = "^2.0.52"
 python-dotenv = "^1.2.3"
 pypdf = "^6.19.0"
+pdfplumber = "^0.11.10"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
