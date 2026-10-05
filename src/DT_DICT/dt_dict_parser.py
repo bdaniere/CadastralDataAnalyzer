@@ -1,12 +1,17 @@
 import json
+import re
 from datetime import date, datetime
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 import pdfplumber
 from pdfplumber.page import Page as pdfplumber_page
 from pypdf import PdfReader
+from pyproj import Transformer
+from shapely.geometry import Polygon
+from shapely.ops import transform as shapely_transform
 
 # ██████╗  ██████╗  ██████╗██╗   ██╗███╗   ███╗███████╗███╗   ██╗████████╗    ██╗███╗   ██╗███████╗ ██████╗██████╗ ███████╗ ██████╗████████╗ ██████╗ ██████╗
 # ██╔══██╗██╔═══██╗██╔════╝██║   ██║████╗ ████║██╔════╝████╗  ██║╚══██╔══╝    ██║████╗  ██║██╔════╝██╔════╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗
@@ -33,7 +38,7 @@ class ContentType(Enum):
     UNKNOWN = "unknown"
 
 
-# TO DO : avoir une approche page par page : es-ce nécéssaire ?
+# TODO : avoir une approche page par page : es-ce nécéssaire ?
 class DocumentInspector:
     def __init__(self, file_path: Path):
         self.file_path = file_path
@@ -136,11 +141,10 @@ class ParserFactory:
 
         self.file_path = file_path
 
-    def read_content(self) -> dict:
-        raise NotImplementedError("Subclasses must implement this method.")
-
 
 class FlattenedPDFParser(ParserFactory):
+    TARGET_EPSG = "EPSG:2154"
+
     def __init__(self, file_path: Path):
         super().__init__(file_path)
         self.reader = PdfReader(file_path)
@@ -151,11 +155,11 @@ class FlattenedPDFParser(ParserFactory):
         with open("template_cerfa_detection.json", encoding="utf-8") as f:
             self.template_cerfa_detection = json.load(f)
 
-    def read_content(self) -> dict:
+    def read_content(self):
         """
         Read the content of the first page of the PDF.
 
-        TO DO :
+        TODO :
          - présence de plusieurs cerfa dans un document en entré
          - Aucun cerfa détecté
 
@@ -174,6 +178,8 @@ class FlattenedPDFParser(ParserFactory):
 
                 if self._is_dt_dict_cerfa(page):
                     results = self.extract_cerfa_data(page, results)
+                elif self._is_page_contain_geometry(page):
+                    results = self.extract_geometry(page, results)
 
         return results
 
@@ -181,7 +187,7 @@ class FlattenedPDFParser(ParserFactory):
         """
         Check if the page matches the DT_DICT cerfa template.
 
-        TO DO : Verification is currently limited to Cerfa form 14434*03
+        TODO : Verification is currently limited to Cerfa form 14434*03
         """
 
         check_fields = {}
@@ -195,7 +201,13 @@ class FlattenedPDFParser(ParserFactory):
             "GLOBAL.cerfa_numero": "N° 14434*03",
         }
 
-    def extract_cerfa_data(self, page: pdfplumber_page, results: dict) -> dict:
+    def _is_page_contain_geometry(self, page: pdfplumber_page) -> bool:
+        text = page.extract_text()
+        return bool(
+            re.search(r"<gml:Polygon\b[^>]*>.*?</gml:Polygon>", text, flags=re.DOTALL)
+        )
+
+    def extract_cerfa_data(self, page: pdfplumber_page, results) -> dict:
         """
         Extract data from the DT_DICT cerfa page.
 
@@ -223,6 +235,45 @@ class FlattenedPDFParser(ParserFactory):
                 results[category][name] = self._parse_date(text)
             else:
                 results[category][name] = text or None
+
+        return results
+
+    def extract_geometry(self, page: pdfplumber_page, results) -> dict:
+        """
+        Extract the first GML polygon of the page, reproject it to TARGET_EPSG
+        and store it in results["GLOBAL"]["geometry"] (Shapely Polygon).
+
+        TODO: Handle cases where the page does not contain a GML polygon.
+        """
+
+        text = page.extract_text() or ""
+        match = re.search(
+            r"<gml:Polygon\b[^>]*>.*?</gml:Polygon>", text, flags=re.DOTALL
+        )
+        if not match:
+            return results
+
+        gml = match.group(0).replace("\n", "").replace("gml:", "")
+        root = ET.fromstring(gml)
+
+        def read_ring(ring: ET.Element) -> list[tuple[float, float]]:
+            values = [float(v) for v in ring.findtext(".//posList", "").split()]
+            if len(values) % 2:
+                raise ValueError("GML posList has an odd number of values")
+            return list(zip(values[::2], values[1::2]))
+
+        exterior = read_ring(root.find("./exterior/LinearRing"))
+        interiors = [read_ring(r) for r in root.findall("./interior/LinearRing")]
+        polygon = Polygon(exterior, interiors)
+
+        source_epsg = root.get("srsName", "EPSG:4326")
+        transformer = Transformer.from_crs(
+            source_epsg, self.TARGET_EPSG, always_xy=True
+        )
+        results["GLOBAL"]["geometry"] = shapely_transform(
+            transformer.transform, polygon
+        )
+        results["GLOBAL"]["geometry_epsg"] = int(self.TARGET_EPSG.split(":")[1])
 
         return results
 
