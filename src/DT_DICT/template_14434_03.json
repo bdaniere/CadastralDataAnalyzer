@@ -1,5 +1,5 @@
 {
-    "template_name": "template_DT_DICT",
+    "template_name": "template_DT_DICT_0.3",
     "fields": {
         "DT.numero_consultation": {
             "type": "text",
@@ -41,7 +41,7 @@
                 259.63253744881894
             ]
         },
-        "DICT.nature_déclaration": {
+        "DICT.nature_declaration": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -51,7 +51,7 @@
                 280.7157217322835
             ]
         },
-        "DT.date de la déclation": {
+        "DT.date_declaration": {
             "type": "date",
             "section": "DT",
             "bbox": [
@@ -61,7 +61,7 @@
                 270.6936423307087
             ]
         },
-        "DICT.date de la déclation": {
+        "DICT.date_declaration": {
             "type": "date",
             "section": "DICT",
             "bbox": [
@@ -71,7 +71,7 @@
                 270.0897182362205
             ]
         },
-        "DT.responsable_du_projet_morale": {
+        "DT.responsable_projet.is_moral": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -81,7 +81,7 @@
                 283.9975690393701
             ]
         },
-        "DT.responsable_du_projet_physique": {
+        "DT.responsable_projet.is_physique": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -101,7 +101,7 @@
                 284.35367140157484
             ]
         },
-        "DT.responsable_du_projet_denomination": {
+        "DT.responsable_projet.denomination": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -111,7 +111,7 @@
                 319.4045560629922
             ]
         },
-        "DICT.executant_denomination": {
+        "DICT.executant.denomination": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -121,7 +121,7 @@
                 318.40440803149613
             ]
         },
-        "DICT.executant_complement": {
+        "DICT.executant.complement": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -131,7 +131,7 @@
                 331.78996998425197
             ]
         },
-        "DICT.executant_voie": {
+        "DICT.executant.adresse.libelle_voie": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -141,7 +141,7 @@
                 345.51502129133866
             ]
         },
-        "DICT.executant_lieu_dit": {
+        "DICT.executant.adresse.lieu_dit": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -151,7 +151,7 @@
                 356.0691727559056
             ]
         },
-        "DICT.executant_numero": {
+        "DICT.executant.adresse.numero_voie": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -161,7 +161,7 @@
                 344.49810859842523
             ]
         },
-        "DICT.executant_code_postal": {
+        "DICT.executant.adresse.code_postal": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -171,7 +171,7 @@
                 366.23562519685044
             ]
         },
-        "DICT.executant_pays": {
+        "DICT.executant.adresse.pays": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -181,7 +181,7 @@
                 379.43763505511816
             ]
         },
-        "DICT.executant_siret": {
+        "DICT.executant.numero_siret": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -191,7 +191,7 @@
                 377.92675077165364
             ]
         },
-        "DICT.executant_personne_contact": {
+        "DICT.executant.coordonnees.nom_prenom": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -201,7 +201,7 @@
                 390.9969666141733
             ]
         },
-        "DICT.executant_tel": {
+        "DICT.executant.coordonnnees.telephone": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -211,7 +211,7 @@
                 402.3279858897638
             ]
         },
-        "DICT.executant_fax": {
+        "DICT.executant.coordonnees.fax": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -221,7 +221,7 @@
                 402.57698116535437
             ]
         },
-        "DICT.executant_couriel": {
+        "DICT.executant.coordonnees.courriel": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -231,7 +231,7 @@
                 414.24872144881897
             ]
         },
-        "DICT.executant_commune": {
+        "DICT.executant.adresse.commune": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -241,7 +241,7 @@
                 366.8890388031496
             ]
         },
-        "DT.responsable_du_projet_pays": {
+        "DT.responsable_projet.pays": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -251,7 +251,7 @@
                 331.21456894488193
             ]
         },
-        "DT.responsable_du_projet_num_siret": {
+        "DT.responsable_projet.numero_siret": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -261,7 +261,7 @@
                 329.4500745826772
             ]
         },
-        "DT.representant_denomination": {
+        "DT.representant.denomination": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -271,7 +271,7 @@
                 355.9731505511811
             ]
         },
-        "DT.representant_complement": {
+        "DT.representant.complement": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -281,7 +281,7 @@
                 369.45280261417327
             ]
         },
-        "DT.representant_numero": {
+        "DT.representant.adresse.numero_voie": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -291,7 +291,7 @@
                 381.55700409448826
             ]
         },
-        "DT.representant_voie": {
+        "DT.representant.adresse.libelle_voie": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -301,7 +301,7 @@
                 382.65738151181114
             ]
         },
-        "DT.representant_lieu_dit": {
+        "DT.representant.adresse.lieu_dit": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -311,7 +311,7 @@
                 392.2856886614174
             ]
         },
-        "DT.representant_code_postal": {
+        "DT.representant.adresse.code_postal": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -321,7 +321,7 @@
                 402.4642507086614
             ]
         },
-        "DT.representant_commune": {
+        "DT.representant.adresse.commune": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -331,7 +331,7 @@
                 404.94007190551184
             ]
         },
-        "DT.representant_personne_contact": {
+        "DT.representant.coordonnees.nom_prenom": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -341,7 +341,7 @@
                 416.4941012598426
             ]
         },
-        "DT.representant_telephone": {
+        "DT.representant.coordonnees.telephone": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -351,7 +351,7 @@
                 426.12242881889773
             ]
         },
-        "DT.represenant_fax": {
+        "DT.representant.coordonnees.fax": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -361,7 +361,7 @@
                 426.6726633070867
             ]
         },
-        "DT.representnat_courriel": {
+        "DT.representant.coordonnees.courriel": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -371,9 +371,9 @@
                 437.12621829921267
             ]
         },
-        "GLOBAL.exploitant": {
+        "global.exploitant": {
             "type": "text",
-            "section": "GLOBAL",
+            "section": "global",
             "bbox": [
                 282.8488818897638,
                 74.69632062992127,
@@ -381,77 +381,7 @@
                 90.25805423622049
             ]
         },
-        "GLOBAL.destinataire": {
-            "type": "text",
-            "section": "GLOBAL",
-            "bbox": [
-                280.9036062992126,
-                126.43908661417325,
-                520.9433262992127,
-                141.61177615748034
-            ]
-        },
-        "GLOBAL.complement d'adresse": {
-            "type": "text",
-            "section": "GLOBAL",
-            "bbox": [
-                281.2529196850394,
-                142.8552566929134,
-                521.2926396850394,
-                158.0279462362205
-            ]
-        },
-        "GLOBAL.numero_et_voie": {
-            "type": "text",
-            "section": "GLOBAL",
-            "bbox": [
-                281.7476503937007,
-                158.34043275590554,
-                521.8641014173227,
-                170.56379735433072
-            ]
-        },
-        "GLOBAL.lieu_dit_voie": {
-            "type": "text",
-            "section": "GLOBAL",
-            "bbox": [
-                281.40281574803146,
-                171.67367055118112,
-                521.5192667716535,
-                183.89703514960632
-            ]
-        },
-        "GLOBAL.code_postal": {
-            "type": "text",
-            "section": "GLOBAL",
-            "bbox": [
-                281.16598110236225,
-                185.41416188976382,
-                326.55668314960633,
-                197.7934450393701
-            ]
-        },
-        "GLOBAL.commune": {
-            "type": "text",
-            "section": "GLOBAL",
-            "bbox": [
-                330.3121322834646,
-                185.57367874015748,
-                520.5543108661418,
-                200.35732535433073
-            ]
-        },
-        "GLOBAL.pays": {
-            "type": "text",
-            "section": "GLOBAL",
-            "bbox": [
-                281.6817165354331,
-                200.3573196850394,
-                521.3323955905512,
-                212.0286200314961
-            ]
-        },
-        "DT.emplacement_projet_adresse": {
+        "DT.emplacement_projet.libelle_voie": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -461,7 +391,7 @@
                 467.6300671181103
             ]
         },
-        "DICT.emplacement_projet_adresse": {
+        "DICT.emplacement_projet.libelle_voie": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -471,7 +401,7 @@
                 468.2779871811024
             ]
         },
-        "DT.emplacement_projet_code_postal": {
+        "DT.emplacement_projet.code_postal": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -481,7 +411,7 @@
                 477.44153319685046
             ]
         },
-        "DICT.emplacement_projet_code_postal": {
+        "DICT.emplacement_projet.code_postal": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -491,7 +421,7 @@
                 477.18925029921263
             ]
         },
-        "DT.emplacement_projet_commune_principale": {
+        "DT.emplacement_projet.commune": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -501,7 +431,7 @@
                 479.301380503937
             ]
         },
-        "DICT.emplacement_projet_commune_principale": {
+        "DICT.emplacement_projet.commune": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -511,7 +441,7 @@
                 478.581977480315
             ]
         },
-        "DT.emplacement_projet_nb_communes": {
+        "DT.nb_communes": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -521,7 +451,7 @@
                 488.2029275905512
             ]
         },
-        "DICT.emplacement_projet_nb_communes": {
+        "DICT.nb_communes": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -531,7 +461,7 @@
                 488.5420645984252
             ]
         },
-        "DT.souhait_reception_recepisse": {
+        "DT.souhait_reception_recepisse.want": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -541,7 +471,7 @@
                 519.7619012598426
             ]
         },
-        "DT.souhait_reception_recepisse_mode": {
+        "DT.souhait_reception_recepisse.mode": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -551,7 +481,7 @@
                 530.9337225826772
             ]
         },
-        "DICT.souhait_reception_recepisse_mode": {
+        "DICT.souhait_reception_recepisse.mode": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -561,7 +491,7 @@
                 524.5757540787403
             ]
         },
-        "DT.souhait_reception_recepisse_taille": {
+        "DT.souhait_reception_recepisse.taille": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -571,7 +501,7 @@
                 554.5918700787403
             ]
         },
-        "DICT.souhait_reception_recepisse_taille": {
+        "DICT.souhait_reception_recepisse.taille": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -581,7 +511,7 @@
                 553.284039968504
             ]
         },
-        "DT.souhait_reception_recepisse_color": {
+        "DT.souhait_reception_recepisse.color": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -591,7 +521,17 @@
                 553.4914858582678
             ]
         },
-        "DT.souhait_reception_recepisse_vector": {
+        "DICT.souhait_reception_recepisse.color": {
+            "type": "checkbox",
+            "section": "DICT",
+            "bbox": [
+                536.9712094488189,
+                544.4232944881891,
+                548.250111496063,
+                553.501435464567
+            ]
+        },
+        "DT.souhait_reception_recepisse.vector": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -601,7 +541,17 @@
                 567.5213310236221
             ]
         },
-        "DT.souhait_reception_recepisse_format": {
+        "DICT.souhait_reception_recepisse.vector": {
+            "type": "checkbox",
+            "section": "DICT",
+            "bbox": [
+                414.61109291338585,
+                558.4734708661418,
+                425.6148994015748,
+                567.8267074015748
+            ]
+        },
+        "DT.souhait_reception_recepisse.format": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -611,7 +561,17 @@
                 569.1719304566931
             ]
         },
-        "DT.projet_natures": {
+        "DICT.souhait_reception_recepisse.format": {
+            "type": "text",
+            "section": "DICT",
+            "bbox": [
+                475.9662897637795,
+                558.7253858267717,
+                545.0151770078742,
+                568.6288123464567
+            ]
+        },
+        "DT.nature_travaux": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -621,7 +581,7 @@
                 599.5158083149607
             ]
         },
-        "DICT.projet_natures": {
+        "DICT.nature_travaux": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -631,7 +591,7 @@
                 598.3106255433071
             ]
         },
-        "DT.projet_description": {
+        "DT.description_travaux": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -641,7 +601,7 @@
                 629.4177581102363
             ]
         },
-        "DICT.projet_description": {
+        "DICT.description_travaux": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -651,7 +611,7 @@
                 619.4428551496063
             ]
         },
-        "DICT.projet_techniques": {
+        "DICT.techniques_utilisees": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -661,7 +621,7 @@
                 644.9989056377954
             ]
         },
-        "DICT.projet_technique_autre": {
+        "DICT.technique_autre": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -671,7 +631,7 @@
                 656.9486277165355
             ]
         },
-        "DICT.projet_technique_profondeur": {
+        "DICT.profondeur_travaux": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -691,7 +651,7 @@
                 638.2207955905512
             ]
         },
-        "DT.projet_sans_tranche_non": {
+        "DT.emploi_technique_sans_tranche_false": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -701,17 +661,7 @@
                 638.6188932283465
             ]
         },
-        "DICT.technique_autre_check": {
-            "type": "checkbox",
-            "section": "DICT",
-            "bbox": [
-                310.17948661417324,
-                646.1853732283465,
-                320.7018682204724,
-                655.2635357480316
-            ]
-        },
-        "DICT.technique_modification_profil": {
+        "DICT.modification_profil": {
             "type": "checkbox",
             "section": "DICT",
             "bbox": [
@@ -721,7 +671,7 @@
                 682.5682885039371
             ]
         },
-        "DICT.technique_result_invest_compl_oui": {
+        "DICT.resultat_investigation_complementaire_True": {
             "type": "checkbox",
             "section": "DICT",
             "bbox": [
@@ -731,7 +681,7 @@
                 705.2087168503938
             ]
         },
-        "DICT.technique_result_invest_compl_non": {
+        "DICT.resultat_investigation_complementaire_false": {
             "type": "checkbox",
             "section": "DICT",
             "bbox": [
@@ -741,7 +691,7 @@
                 705.4250853543308
             ]
         },
-        "DT.projet_distance_elec": {
+        "DT.distance_elec_aerien": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -751,7 +701,7 @@
                 648.1796760000001
             ]
         },
-        "DICT.projet_distance_elec": {
+        "DICT.distance_elec_aerien": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -761,7 +711,7 @@
                 717.3906397795276
             ]
         },
-        "DT.projet_souhait_plan_aerien": {
+        "DT.need_plan_aerien": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -771,7 +721,7 @@
                 655.9644438425197
             ]
         },
-        "DICT.projet_souhait_plan_aerien": {
+        "DICT.need_plan_aerien": {
             "type": "checkbox",
             "section": "DICT",
             "bbox": [
@@ -781,7 +731,7 @@
                 732.5576186456694
             ]
         },
-        "DT.projet_date_prevue": {
+        "DT.date_travaux": {
             "type": "date",
             "section": "DT",
             "bbox": [
@@ -791,7 +741,7 @@
                 669.8567508661419
             ]
         },
-        "DICT.projet_date_prevue": {
+        "DICT.date_travaux": {
             "type": "date",
             "section": "DICT",
             "bbox": [
@@ -801,7 +751,7 @@
                 750.1001272440946
             ]
         },
-        "DT.projet_duree": {
+        "DT.duree_travaux": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -811,7 +761,7 @@
                 668.2061505826772
             ]
         },
-        "DICT.projet_duree": {
+        "DICT.duree_travaux": {
             "type": "text",
             "section": "DICT",
             "bbox": [
@@ -821,7 +771,7 @@
                 760.6291773543307
             ]
         },
-        "DT.investigation_comp_oui": {
+        "DT.investigation_complementaire.oui": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -831,7 +781,7 @@
                 704.1683817637796
             ]
         },
-        "DT.investigation_comp_non": {
+        "DT.investigation_complementaire.non": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -841,7 +791,7 @@
                 704.3894274330709
             ]
         },
-        "DT.investigation_comp_motif": {
+        "DT.investigation_complementaire.motif": {
             "type": "text",
             "section": "DT",
             "bbox": [
@@ -851,7 +801,7 @@
                 727.9018392755905
             ]
         },
-        "DT.investigation_comp_date": {
+        "DT.investigation_complementaire.date_realisation": {
             "type": "date",
             "section": "DT",
             "bbox": [
@@ -861,7 +811,7 @@
                 739.4558555905512
             ]
         },
-        "DT.investigation_comp_need_dict": {
+        "DT.investigation_complementaire.need_dict": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
@@ -871,7 +821,7 @@
                 748.3964428346459
             ]
         },
-        "DT.investigation_comp_envoi_autres_acteurs": {
+        "DT.investigation_complementaire.envoi_resultat": {
             "type": "checkbox",
             "section": "DT",
             "bbox": [
