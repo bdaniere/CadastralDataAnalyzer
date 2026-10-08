@@ -56,6 +56,14 @@ class DocumentInspector:
             return False
 
     @cached_property
+    def is_xml(self) -> bool:
+        try:
+            next(ET.iterparse(self.file_path, events=("start",)))
+            return True
+        except (OSError, ET.ParseError, StopIteration):
+            return False
+
+    @cached_property
     def form_fields(self) -> dict[str, str]:
         """
         Extract AcroForm fields if present.
@@ -95,10 +103,16 @@ class DocumentInspector:
         if self.is_pdf:
             return FileType.PDF
 
+        if self.is_xml:
+            return FileType.XML
+
         return FileType.UNKNOWN
 
     @property
     def content_type(self) -> ContentType:
+
+        if self.file_type == FileType.XML:
+            return ContentType.XML
 
         if self.file_type != FileType.PDF:
             return ContentType.UNKNOWN
@@ -113,12 +127,14 @@ class DocumentInspector:
 
     @property
     def document_info(self) -> dict:
-        return {
+        info = {
             "file_type": self.file_type.value,
             "content_type": self.content_type.value,
             "has_form_fields": self.has_form_fields,
-            "page_count": len(self.pdf_reader.pages),
         }
+        if self.file_type == FileType.PDF:
+            info["page_count"] = len(self.pdf_reader.pages)
+        return info
 
     def __repr__(self) -> str:
         return (
@@ -389,6 +405,15 @@ class FlattenedPDFParser(ParserFactory):
             return None
 
 
+class XMLParser(ParserFactory):
+    def __init__(self, xml_path: Path):
+        self.xml_path = xml_path
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        breakpoint()
+
+
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗
 # ██╔══██╗██╔════╝██╔══██╗██║   ██║██╔════╝
 # ██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗
@@ -397,7 +422,10 @@ class FlattenedPDFParser(ParserFactory):
 # ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝
 
 if __name__ == "__main__":
-    input_file_path = Path("/home/bn/Documents/maquette/Travaux-Prevelles-09-2026.pdf")
+    # input_file_path = Path("/home/bn/Documents/maquette/Travaux-Prevelles-09-2026.pdf")
+    input_file_path = Path(
+        "/home/bn/Documents/Perso/CadastralDataAnalyzer/src/DT_DICT/dev_tools/2026100800884T_DDC/2026100800884T_DDC_description/2026100800884T_DDC_description.xml"
+    )
 
     document_inspector = DocumentInspector(input_file_path)
     print(document_inspector.document_info)
@@ -410,5 +438,7 @@ if __name__ == "__main__":
             # scanned_pdf = ScannedPDFParser(input_file_path)
             # content = scanned_pdf.read_content()
             raise NotImplementedError("Scanned PDF parsing is not implemented yet.")
+    elif document_inspector.document_info["file_type"] == "xml":
+        xml_parser = XMLParser(input_file_path)
 
     breakpoint()
