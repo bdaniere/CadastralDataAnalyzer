@@ -227,7 +227,7 @@ class FlattenedPDFParser(ParserFactory):
                 values["declaration_type"] = DeclarationType.CONJOINTE
             else:
                 values["declaration_type"] = DeclarationType.DT
-            values["geom"] = results["global"].get("geom")
+            values["emprise.geometrie"] = results["global"].get("geom")
 
             print(values)
 
@@ -406,12 +406,125 @@ class FlattenedPDFParser(ParserFactory):
 
 
 class XMLParser(ParserFactory):
-    def __init__(self, xml_path: Path):
-        self.xml_path = xml_path
-        tree = ET.parse(xml_path)
-        root = tree.getroot()
+    TARGET_EPSG = FlattenedPDFParser.TARGET_EPSG
 
-        breakpoint()
+    def __init__(self, xml_path: Path):
+        super().__init__(xml_path)
+        self.root = ET.parse(xml_path).getroot()
+
+        # Drop namespaces so that tags match the dataclass field names.
+        for element in self.root.iter():
+            element.tag = element.tag.rsplit("}", 1)[-1]
+
+    def read_content(self) -> list[DT | DICT]:
+        """
+        Returns:
+            list[DT | DICT]: the declarations found in the XML (both when
+            the file is a joint DT-DICT).
+        """
+
+        declarations: list[DT | DICT] = []
+
+        dt = self.root.find("DT")
+        if dt is None:
+            dt = self.root.find("dtDictConjointes/partieDT")
+        if dt is not None:
+            conjointe = dt.findtext("declarationConjointeDTDICT", "").strip() == "true"
+            declaration_type = (
+                DeclarationType.CONJOINTE if conjointe else DeclarationType.DT
+            )
+            declarations.append(self._build(DT, dt, declaration_type=declaration_type))
+
+        dict_part = self.root.find("dtDictConjointes/partieDICT")
+        if dict_part is not None:
+            declarations.append(
+                self._build(DICT, dict_part, declaration_type=DeclarationType.DICT)
+            )
+
+        return declarations
+
+    def _build(self, model: type, element: ET.Element, **overrides):
+        """Instantiate a dataclass from the child elements named like its fields."""
+        hints = get_type_hints(model)
+        kwargs = {}
+        for f in fields(model):
+            if f.name in overrides:
+                kwargs[f.name] = overrides[f.name]
+                continue
+
+            tp = FlattenedPDFParser._unwrap_optional(hints[f.name])
+            child = element.find(f.name)
+
+            if get_origin(tp) is list:
+                (item_tp,) = get_args(tp)
+                if is_dataclass(item_tp):
+                    items = (
+                        [self._build(item_tp, c) for c in child]
+                        if child is not None
+                        else []
+                    )
+                else:
+                    items = [
+                        self._convert(c.text, item_tp) for c in element.findall(f.name)
+                    ]
+                kwargs[f.name] = [i for i in items if i is not None]
+            elif child is None:
+                kwargs[f.name] = None
+            elif f.name == "geometrie":
+                kwargs[f.name] = self._read_geometry(child)
+            elif is_dataclass(tp):
+                kwargs[f.name] = self._build(tp, child)
+            else:
+                kwargs[f.name] = self._convert(child.text, tp)
+        return model(**kwargs)
+
+    @staticmethod
+    def _convert(text: str | None, tp):
+        """Coerce an element text to the dataclass field type."""
+        text = (text or "").strip()
+        if not text:
+            return None
+        try:
+            if tp is bool:
+                return text.lower() == "true"
+            if tp is int:
+                return int(text)
+            if tp is float:
+                return float(text)
+            if tp is datetime:
+                return datetime.fromisoformat(text)
+            if tp is date:
+                return date.fromisoformat(text[:10])  # drops the timezone suffix
+            if isinstance(tp, type) and issubclass(tp, Enum):
+                return tp(text.upper())
+        except ValueError:
+            return None
+        return text
+
+    def _read_geometry(self, element: ET.Element) -> str | None:
+        """Read the first GML polygon and return its WKT in TARGET_EPSG."""
+        polygon_el = element.find(".//Polygon")
+        if polygon_el is None:
+            return None
+
+        def read_ring(ring: ET.Element) -> list[tuple[float, float]]:
+            coordinates = ring.findtext("coordinates")
+            if coordinates:
+                return [
+                    tuple(float(v) for v in pair.split(",")[:2])
+                    for pair in coordinates.split()
+                ]
+            values = [float(v) for v in ring.findtext(".//posList", "").split()]
+            return list(zip(values[::2], values[1::2]))
+
+        exterior = read_ring(polygon_el.find("exterior/LinearRing"))
+        interiors = [read_ring(r) for r in polygon_el.findall("interior/LinearRing")]
+        polygon = Polygon(exterior, interiors)
+
+        transformer = Transformer.from_crs(
+            element.get("srsName", "EPSG:4326"), self.TARGET_EPSG, always_xy=True
+        )
+        return shapely_transform(transformer.transform, polygon).wkt
 
 
 # ██████╗ ███████╗██████╗ ██╗   ██╗ ██████╗
@@ -421,11 +534,19 @@ class XMLParser(ParserFactory):
 # ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝
 # ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝
 
+"""
+TODO
+    - gestion des checkbo avec valeur true et false que l'on met dans une seule variable in-fine
+"""
+
 if __name__ == "__main__":
     # input_file_path = Path("/home/bn/Documents/maquette/Travaux-Prevelles-09-2026.pdf")
     input_file_path = Path(
-        "/home/bn/Documents/Perso/CadastralDataAnalyzer/src/DT_DICT/dev_tools/2026100800884T_DDC/2026100800884T_DDC_description/2026100800884T_DDC_description.xml"
+        "/home/bn/Documents/maquette/2026100801380T_DICT-DT Conjointe_1.pdf"
     )
+    # input_file_path = Path(
+    #     "/home/bn/Documents/Perso/CadastralDataAnalyzer/src/DT_DICT/dev_tools/2026100800884T_DDC/2026100800884T_DDC_description/2026100800884T_DDC_description.xml"
+    # )
 
     document_inspector = DocumentInspector(input_file_path)
     print(document_inspector.document_info)
@@ -440,5 +561,6 @@ if __name__ == "__main__":
             raise NotImplementedError("Scanned PDF parsing is not implemented yet.")
     elif document_inspector.document_info["file_type"] == "xml":
         xml_parser = XMLParser(input_file_path)
+        content = xml_parser.read_content()
 
     breakpoint()

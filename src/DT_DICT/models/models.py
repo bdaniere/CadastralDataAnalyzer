@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 
@@ -36,14 +36,20 @@ class TechniqueTravaux(Enum):
     VIB = "VIB"
     STA = "STA"
     EXP = "EXP"
+    TED = "TED"
 
 
 class NatureDeclaration(Enum):
     INITIAL = "INITIAL"
     INVEST = "INVEST"
-    MR_3 = "3MR"
+    MR_3 = "MR3"
     INTERUP = "INTERUP"
-    MR_6 = "6MR"
+    MR_6 = "MR6"
+
+
+class TypeEntite(Enum):
+    PERSONNE_PHYSIQUE = "PERSONNE_PHYSIQUE"
+    PERSONNE_MORALE = "PERSONNE_MORALE"
 
 
 class DeclarationType(Enum):
@@ -53,54 +59,108 @@ class DeclarationType(Enum):
 
 
 @dataclass
-class Coordonnees:
-    nom_prenom: str
-    telephone: str
-    fax: str | None
-    courriel: str
-
-
-@dataclass
-class Adresse:
-    numero_voie: str | None
-    libelle_voie: str | None
-    lieu_dit: str | None
-    code_postal: str | None
-    commune: str | None
-    pays: str | None = None
-
-
-@dataclass
 class Acteur:
-    denomination: str
-    complement: str | None
-    adresse: Adresse
-    coordonnees: Coordonnees
-    numero_siret: str
+    denomination: str | None = None
+    complementService: str | None = None
+    numero: str | None = None
+    voie: str | None = None
+    lieuDitBP: str | None = None
+    codePostal: str | None = None
+    commune: str | None = None
+    pays: str | None = None
+    noSiret: str | None = None
+    personneAcontacter: str | None = None  # DT
+    nomDeLaPersonneAContacter: str | None = None  # DICT
+    tel: str | None = None
+    fax: str | None = None
+    courriel: str | None = None
 
 
 @dataclass
-class ResponsableProjet(Acteur):
-    is_moral: bool
+class EmplacementDeLaCommuneConcernee:
+    nomDeLaCommune: str | None = None
+    codePostal: str | None = None
+    codeINSEE: str | None = None
 
 
 @dataclass
-class SouhaitReceptionRecepisse:
-    want: bool
-    mode: str | None
-    taille: str | None
-    color: bool | None
-    vector: bool | None
-    format: str | None
+class Emplacement:
+    adresse: str | None = None  # DT uniquement
+    CP: str | None = None
+    communePrincipale: str | None = None
+    codeINSEE: str | None = None
+    nombreDeCommunes: int | None = None
+    listeDesEmplacementsDesCommunesConcernees: list[EmplacementDeLaCommuneConcernee] = (
+        field(default_factory=list)
+    )
 
 
 @dataclass
-class InvestigationComplementaire:
-    realisation: bool | None
-    motif: str | None
-    date_realisation: date | None
-    need_dict: bool | None
-    envoi_resultat: bool | None
+class Emprise:
+    geometrie: str | None = None  # WKT reprojeté
+    surface: float | None = None
+    referenceDelaCarte: str | None = None
+
+
+@dataclass
+class ModeReceptionElectronique:
+    tailleDesPlans: str | None = None
+    couleurDesPlans: bool | None = None
+    souhaitDePlansVectoriels: bool | None = None
+    formatDesPlansVectoriels: str | None = None
+
+
+@dataclass
+class ModeReceptionCourrier:
+    """Balise vide : sa présence indique une réception par courrier."""
+
+
+@dataclass
+class SouhaitsPourLeRecepisse:
+    souhaiteRecevoirLeRecepisse: bool | None = None  # DT uniquement
+    modeReceptionElectronique: ModeReceptionElectronique | None = None
+    modeReceptionCourrier: ModeReceptionCourrier | None = None
+
+
+@dataclass
+class InvestigationsComplementaires:
+    realisationDInvestigationsComplementaires: bool | None = None
+    motifDeRealisationOuNonDInvestigation: str | None = None
+    dateDesInvestigationsComplementaires: date | None = None
+    InvestigationsSusceptibleDeNecessiterUneDICT: bool | None = None
+    envoiDesResultatsAuxExploitantsDOuvragesEtAuxEntreprises: bool | None = None
+
+
+@dataclass
+class Signature:
+    nomDuSignataire: str | None = None
+    nombrePagesJointes: int | None = None
+
+
+@dataclass
+class ProjetEtSonCalendrier:
+    natureDesTravaux: list[NatureProjet] = field(default_factory=list)
+    decrivezLeProjet: str | None = None
+    emploiDeTechniquesSansTranchees: bool | None = None
+    distanceMinimaleEntreLesTravauxEtLaLigneElectrique: float | None = None
+    souhaitLesPlansDesReseauxElectriqueAeriens: bool | None = None
+    datePrevuePourLeCommencementDesTravaux: date | None = None
+    dureeDuChantierEnJours: int | None = None
+
+
+@dataclass
+class TravauxEtLeurCalendrier:
+    natureDesTravaux: list[NatureProjet] = field(default_factory=list)
+    decrivezLesTravaux: str | None = None
+    techniquesUtilisees: list[TechniqueTravaux] = field(default_factory=list)
+    autreTechnique: str | None = None
+    profondeurMaxDExcavation: float | None = None
+    modificationProfilTerrain: bool | None = None
+    communicationResultatsInvestigations: bool | None = None
+    distanceMinimaleEntreLesTravauxEtLaLigneElectrique: float | None = None
+    souhaitLesPlansDesReseauxElectriqueAeriens: bool | None = None
+    datePrevuePourLeCommencementDesTravaux: date | None = None
+    dureeDuChantierEnJours: int | None = None
 
 
 @dataclass
@@ -109,21 +169,11 @@ class Declaration:
     Classe racine commune à tous les documents DT-DICT.
     """
 
-    numero_consultation: str
-    declaration_type: DeclarationType
-    numero_affaire: str | None = None
-    date_declaration: date | None = None
-    emplacement_projet: Adresse | None = None
-    nb_communes: int | None = None
-    souhait_reception_recepisse: SouhaitReceptionRecepisse | None = None
-    nature_travaux: list[NatureProjet] = field(default_factory=list)
-    description_travaux: str | None = None
-    distance_elec_aerien: float | None = None
-    need_plan_aerien: bool | None = None
-    date_travaux: date | None = None
-    duree_travaux: float | None = None
-    nom_signataire: str | None = None
-    geom: str | None = None  # TODO : a voir
+    declaration_type: DeclarationType  # hors XML
+    noConsultationDuTeleservice: str | None = None
+    dateDeLaDeclaration: datetime | None = None
+    emprise: Emprise | None = None
+    souhaitsPourLeRecepisse: SouhaitsPourLeRecepisse | None = None
 
 
 @dataclass
@@ -132,10 +182,16 @@ class DT(Declaration):
     Déclaration de Travaux.
     """
 
-    responsable_projet: ResponsableProjet | None = None
-    representant: Acteur | None = None
-    emploi_technique_sans_tranche: bool | None = None
-    investigation_complementaire: InvestigationComplementaire | None = None
+    noConsultationDuTeleserviceSeize: str | None = None  # DT seule (hors conjointe)
+    noAffaireDuResponsableDuProjet: str | None = None
+    typeEntite: TypeEntite | None = None
+    declarationConjointeDTDICT: bool | None = None
+    responsableDuProjet: Acteur | None = None
+    representantDuResponsableDeProjet: Acteur | None = None
+    emplacementDuProjet: Emplacement | None = None
+    projetEtSonCalendrier: ProjetEtSonCalendrier | None = None
+    investigationsComplementaires: InvestigationsComplementaires | None = None
+    signatureDuResponsableDuProjetOuDeSonRepresentant: Signature | None = None
 
 
 @dataclass
@@ -144,12 +200,9 @@ class DICT(Declaration):
     Déclaration d'Intention de Commencement de Travaux.
     """
 
-    nature_declaration: NatureDeclaration | None = None
-    executant: Acteur | None = None
-    techniques_utilisees: list[TechniqueTravaux] = field(default_factory=list)
-    technique_autre: str | None = None
-    profondeur_travaux: float | None = None
-    modification_profil: bool | None = None
-    resultat_investigation_complementaire: bool | None = None
-    duree_travaux: float | None = None
-    dt_reference: str | None = None
+    noAffaireDeLexecutantDesTravaux: str | None = None
+    natureDeLaDeclaration: NatureDeclaration | None = None
+    executantDesTravaux: Acteur | None = None
+    emplacementDesTravaux: Emplacement | None = None
+    travauxEtLeurCalendrier: TravauxEtLeurCalendrier | None = None
+    signatureDeLExecutantDesTravauxOuDeSonRepresentant: Signature | None = None
