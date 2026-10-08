@@ -1,12 +1,16 @@
 import json
 import re
+from dataclasses import fields, is_dataclass
 from datetime import date, datetime
 from enum import Enum
 from functools import cached_property
 from pathlib import Path
+from types import UnionType
+from typing import Any, Union, get_args, get_origin, get_type_hints
 from xml.etree import ElementTree as ET
 
 import pdfplumber
+from models.models import DICT, DT, DeclarationType
 from pdfplumber.page import Page as pdfplumber_page
 from pypdf import PdfReader
 from pyproj import Transformer
@@ -164,10 +168,11 @@ class FlattenedPDFParser(ParserFactory):
          - Aucun cerfa détecté
 
         Returns:
-            dict: A dictionary containing the parsed content of the PDF.
+            list[DT | DICT]: the declarations found in the cerfa (both when
+            the cerfa is filled as a joint DT-DICT).
         """
 
-        results = {"DT": {}, "DICT": {}, "GLOBAL": {}}
+        results = {"DT": {}, "DICT": {}, "global": {}}
 
         with pdfplumber.open(self.file_path) as pdf_file:
             for page in pdf_file.pages:
@@ -181,7 +186,95 @@ class FlattenedPDFParser(ParserFactory):
                 elif self._is_page_contain_geometry(page):
                     results = self.extract_geometry(page, results)
 
-        return results
+        return self._build_declarations(results)
+
+    def _build_declarations(self, results: dict) -> list[DT | DICT]:
+        """
+        Build a list of declarations from the extracted results.
+
+        Args:
+            results (dict): The extracted results from the PDF.
+
+        Returns:
+            list[DT | DICT]: The list of declarations.
+        """
+
+        declarations = []
+        for section, cls in (("DT", DT), ("DICT", DICT)):
+            values = dict(results[section])
+            if not any(v not in (None, False) for v in values.values()):
+                continue
+
+            if section == "DICT":
+                values["declaration_type"] = DeclarationType.DICT
+            elif values.pop("is_conjointe", False):
+                values["declaration_type"] = DeclarationType.CONJOINTE
+            else:
+                values["declaration_type"] = DeclarationType.DT
+            values["geom"] = results["global"].get("geom")
+
+            print(values)
+
+            declarations.append(self._build(cls, values))
+
+        return declarations
+
+    @classmethod
+    def _build(cls, model: type, values: dict[str, Any], prefix: str = ""):
+        """Instantiate a dataclass from flat 'a.b.c' keyed values."""
+        hints = get_type_hints(model)
+        kwargs = {}
+        for f in fields(model):
+            tp = cls._unwrap_optional(hints[f.name])
+            key = prefix + f.name
+            if is_dataclass(tp):
+                sub_prefix = key + "."
+                has_values = any(
+                    k.startswith(sub_prefix) and v not in (None, False)
+                    for k, v in values.items()
+                )
+                kwargs[f.name] = (
+                    cls._build(tp, values, sub_prefix) if has_values else None
+                )
+            else:
+                kwargs[f.name] = cls._convert(values.get(key), tp)
+        return model(**kwargs)
+
+    @staticmethod
+    def _unwrap_optional(tp):
+        args = [a for a in get_args(tp) if a is not type(None)]
+        if get_origin(tp) in (Union, UnionType) and len(args) == 1:
+            return args[0]
+        return tp
+
+    @classmethod
+    def _convert(cls, value, tp):
+        """Coerce an extracted value to the dataclass field type."""
+        if get_origin(tp) is list:
+            (item_tp,) = get_args(tp)
+            if isinstance(value, list):
+                return value
+            tokens = re.split(r"[\s,;/+]+", value or "")
+            items = [cls._convert(t, item_tp) for t in tokens if t]
+            return [i for i in items if i is not None]
+
+        if value is None:
+            return None
+        if isinstance(tp, type) and isinstance(value, tp):
+            return value
+
+        try:
+            if tp is bool:
+                return bool(value)
+            if tp is int:
+                return int(re.sub(r"\D", "", value))
+            if tp is float:
+                return float(value.replace(",", ".").replace(" ", ""))
+            if isinstance(tp, type) and issubclass(tp, Enum):
+                return tp(str(value).strip().upper())
+        except (ValueError, TypeError):
+            return None
+        return value
 
     def _is_dt_dict_cerfa(self, page: pdfplumber_page) -> bool:
         """
@@ -241,7 +334,7 @@ class FlattenedPDFParser(ParserFactory):
     def extract_geometry(self, page: pdfplumber_page, results) -> dict:
         """
         Extract the first GML polygon of the page, reproject it to TARGET_EPSG
-        and store it in results["GLOBAL"]["geometry"] (Shapely Polygon).
+        and store its WKT in results["global"]["geom"].
 
         TODO: Handle cases where the page does not contain a GML polygon.
         """
@@ -270,10 +363,9 @@ class FlattenedPDFParser(ParserFactory):
         transformer = Transformer.from_crs(
             source_epsg, self.TARGET_EPSG, always_xy=True
         )
-        results["GLOBAL"]["geometry"] = shapely_transform(
+        results["global"]["geom"] = shapely_transform(
             transformer.transform, polygon
-        )
-        results["GLOBAL"]["geometry_epsg"] = int(self.TARGET_EPSG.split(":")[1])
+        ).wkt
 
         return results
 
@@ -306,10 +398,17 @@ class FlattenedPDFParser(ParserFactory):
 
 if __name__ == "__main__":
     input_file_path = Path("/home/bn/Documents/maquette/Travaux-Prevelles-09-2026.pdf")
+
     document_inspector = DocumentInspector(input_file_path)
     print(document_inspector.document_info)
 
-    toto = FlattenedPDFParser(input_file_path)
-    content = toto.read_content()
+    if document_inspector.document_info["file_type"] == "pdf":
+        if document_inspector.document_info["content_type"] == "flattened_pdf":
+            flattened_pdf = FlattenedPDFParser(input_file_path)
+            content = flattened_pdf.read_content()
+        elif document_inspector.document_info["content_type"] == "scanned_pdf":
+            # scanned_pdf = ScannedPDFParser(input_file_path)
+            # content = scanned_pdf.read_content()
+            raise NotImplementedError("Scanned PDF parsing is not implemented yet.")
 
     breakpoint()
